@@ -1,13 +1,41 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="UTF-8" />
+<head>
+    <meta charset="UTF-8"/>
     <title>Hello World!</title>
 
-  </head>
-  <body>
+    <style>
+        #container {
+            display: inline;
+        }
+
+        #container > pre {
+            display: inline;
+            margin: 0;
+        }
+
+        /* If container is empty than show landing page, otherwise hide */
+        #landing-page:has(~ #container:empty) {
+            display: block;
+        }
+
+        #landing-page:has(~ #container:not(:empty)) {
+            display: none;
+        }
+
+    </style>
+
+    <style id="common-style"></style>
+
+</head>
+<body>
+<div id="landing-page">
     <h1>💖 Hello World!</h1>
     <p>Welcome to your Electron application.</p>
-    <script type="module" src="/src/renderer.js"></script>
-  </body>
+</div>
+
+<div id="container"></div>
+
+<script type="module" src="/src/renderer.js"></script>
+</body>
 </html>

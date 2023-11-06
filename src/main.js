@@ -1,6 +1,8 @@
 const {app, BrowserWindow} = require('electron');
 const path = require('node:path');
 const {dialog, ipcMain} = require('electron')
+const fs = require("node:fs/promises");
+const {createReadStream} = require("node:fs");
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -63,7 +65,7 @@ ipcMain.handle('select-file', async () => {
 
     try {
         const result = await dialog.showOpenDialog({properties: ['openFile'], defaultPath: defaultPath});
-        if(result.canceled) {
+        if (result.canceled) {
             console.log('canceled');
             return undefined;
         }
@@ -73,3 +75,64 @@ ipcMain.handle('select-file', async () => {
         return undefined
     }
 });
+
+ipcMain.handle('pre-start-reading-file', async (event, filePath) => {
+    // Make sure the path:
+    // - exists
+    // - a file
+    // - have read access
+
+    if (!filePath) {
+        throw new Error('no file path provided');
+    }
+
+    let fileStats;
+
+    try {
+        fileStats = await fs.stat(filePath);
+    } catch (e) {
+        if(e.code === 'ENOENT') {
+            throw new Error('file not found');
+        }
+
+        console.error('failed to get file stats', e);
+        throw new Error('Failed to get file');
+    }
+
+    if (!fileStats.isFile()) {
+        throw new Error('not a file');
+    }
+
+    try {
+        await fs.access(filePath, fs.constants.R_OK);
+    } catch (e) {
+        throw new Error('Access denied');
+    }
+
+    return true;
+});
+
+ipcMain.on('read-file-stream', async (event, filePath) => {
+    const eventNameForFileStreamChunks = `read-file-stream-${filePath}`
+
+    // TODO
+    //  - add back pressure
+    //  - if no ping than clean up so we don't have memory leak
+    //  - add error handling
+    //  - add cancellation
+
+    const stream = createReadStream(filePath)
+    try {
+        for await (const chunk of stream) {
+            console.log('chunk')
+            event.sender.send(eventNameForFileStreamChunks, chunk.toString())
+        }
+
+        console.log('finish')
+        event.sender.send(eventNameForFileStreamChunks, null)
+    } catch (e) {
+        console.error('failed to read file', e)
+        // TODO - send error
+        event.sender.send(eventNameForFileStreamChunks, null)
+    }
+})

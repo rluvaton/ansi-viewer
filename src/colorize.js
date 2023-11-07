@@ -1,4 +1,4 @@
-import {parseAnsi} from "./ansi-parser";
+import {parseIterator as parseAnsi} from "ansicolor";
 
 
 let idCounter = 0;

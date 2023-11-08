@@ -101,6 +101,11 @@ export class CurrentFileStore {
                 reject(timeoutError);
             }, 5000);
 
+            if(chunkIndex < currentChunkIndex + 1) {
+                // We already read this chunk, ignore it
+                return;
+            }
+
             // We can receive chunks in the wrong order that was sent, so we need to sort them
             if(chunkIndex === currentChunkIndex + 1) {
                 currentChunkIndex++;

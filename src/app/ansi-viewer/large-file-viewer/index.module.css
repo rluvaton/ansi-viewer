@@ -1,6 +1,7 @@
 /* The div below is the container for the virtual list */
 .ansiContainer > div {
-    display: inline;
+    /*TODO - check this, with this actual scroll not working */
+    /*display: inline;*/
 }
 
 .ansiContainer pre {

@@ -9,7 +9,7 @@ import {FixedSizeList, ListChildComponentProps} from "react-window";
 import s from './index.module.css';
 
 function LargeAnsiFileViewerComp() {
-    const {currentFileStore} = getContainer();
+    const {currentFileStore, currentInstanceStore} = getContainer();
 
     if(currentFileStore.currentFileState === 'error') {
         return <div>Error</div>
@@ -35,13 +35,14 @@ function LargeAnsiFileViewerComp() {
                 // TODO - should not be fixed
                 <FixedSizeList
                     key={currentFileStore.linesRerenderKey}
+
                     // Should this be the current displayed lines?
                     itemCount={numberOfLines}
                     // onItemsRendered={onItemsRendered}
                     // ref={ref}
 
                     // TODO - make sure it's cached
-                    height={window.innerHeight}
+                    height={currentInstanceStore.windowInnerHeight}
                     width="100%"
 
                     // this is the line height
@@ -51,7 +52,7 @@ function LargeAnsiFileViewerComp() {
                 >
                     {LineCode}
                 </FixedSizeList>
-        //     )}
+            // )}
         // </InfiniteLoader>
     )
 }

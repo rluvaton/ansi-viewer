@@ -1,16 +1,20 @@
 import React, {useState} from "react";
 import {LandingPage} from "./landing-page";
 import {AnsiViewerPage} from "./ansi-viewer/page";
+import {getContainer} from "./stores/stores-container";
+import {observer} from "mobx-react-lite";
 
 function App() {
-    const [filePath, setFilePath] = useState<string | null>(null)
+    const {fileSelectorStore} = getContainer();
 
     return (
         <>
-            {!filePath && <LandingPage setFilePath={setFilePath}/>}
-            {filePath && <AnsiViewerPage filePath={filePath}/>}
+            {fileSelectorStore.fileSelectingState === 'idle' &&
+                <LandingPage/>}
+            {/*TODO - avoid rerendering when selecting file*/}
+            {fileSelectorStore.fileSelectingState !== 'idle' && <AnsiViewerPage/>}
         </>
     )
 }
 
-export default App
+export default observer(App)

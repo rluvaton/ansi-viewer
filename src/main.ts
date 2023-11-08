@@ -162,6 +162,7 @@ ipcMain.handle('pre-start-reading-file', async (event, filePath) => {
 });
 
 ipcMain.on('read-file-stream', async (event, filePath) => {
+    console.log('read-file-stream', filePath)
     mainWindow.setRepresentedFilename(filePath);
 
     const eventNameForFileStreamChunks = `read-file-stream-${filePath}`

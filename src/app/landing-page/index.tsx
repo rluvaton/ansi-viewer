@@ -1,31 +1,19 @@
 import React from 'react';
+import {observer} from "mobx-react-lite";
+import {getContainer} from "../stores/stores-container";
 
-interface Props {
-    setFilePath(filePath: string): void;
-}
-
-export function LandingPage({setFilePath}: Props) {
-    const [isInMiddleOfSelectingFile, setIsInMiddleOfSelectingFile] = React.useState(false);
+function LandingPageComp() {
+    const {fileSelectorStore} = getContainer();
 
     return (
         <div>
             <h1>Ansi Viewer</h1>
             <p>This app will display ANSI texts</p>
-            <button disabled={isInMiddleOfSelectingFile} onClick={async () => {
-                try {
-                    const filePathToRead = await window.electron.selectFile();
-                    console.log(filePathToRead);
 
-                    if(!filePathToRead) {
-                        // no file selected
-                        return;
-                    }
-
-                    setFilePath(filePathToRead);
-                } finally {
-                    setIsInMiddleOfSelectingFile(false);
-                }
-            }}>Open file</button>
+            {/* TODO - allow to disable while selecting*/}
+            <button disabled={fileSelectorStore.fileSelectingState === 'selecting'} onClick={fileSelectorStore.selectFile}>Open file</button>
         </div>
     )
 }
+
+export const LandingPage = observer(LandingPageComp);

@@ -1,0 +1,8 @@
+.ansiContainer {
+    display: inline;
+}
+
+.ansiContainer > pre {
+    display: inline;
+    margin: 0;
+}

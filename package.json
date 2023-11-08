@@ -43,6 +43,8 @@
     "mobx": "^6.10.2",
     "mobx-react-lite": "^4.0.5",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "react-window": "^1.8.9",
+    "react-window-infinite-loader": "^1.0.9"
   }
 }

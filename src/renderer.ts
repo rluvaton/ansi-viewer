@@ -32,7 +32,7 @@ import {colorizeAnsi} from "./colorize";
 console.log('👋 This message is being logged by "renderer.js", included via Vite');
 
 async function run() {
-    const preloadPath = await window.electron.getSelectedPath();
+    const preloadPath = await window.electron.selectFile();
     console.log(preloadPath);
 
     if (!preloadPath) {
@@ -107,3 +107,6 @@ async function* readFile(filePathToRead) {
 }
 
 run();
+
+
+// Number of lines

@@ -1,17 +1,20 @@
-const {app, BrowserWindow} = require('electron');
-const path = require('node:path');
-const {dialog, ipcMain} = require('electron')
-const fs = require("node:fs/promises");
-const {createReadStream} = require("node:fs");
+import {app, BrowserWindow, dialog, ipcMain, Menu} from "electron";
+import * as path from "node:path";
+import * as fs from "node:fs/promises";
+import {createReadStream} from "node:fs";
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
     app.quit();
 }
 
+let mainWindow: BrowserWindow;
+
 const createWindow = () => {
+    setMainMenu();
+
     // Create the browser window.
-    const mainWindow = new BrowserWindow({
+    mainWindow = new BrowserWindow({
         width: 800,
         height: 600,
         webPreferences: {
@@ -30,6 +33,52 @@ const createWindow = () => {
     }
 
 };
+
+function setMainMenu() {
+
+    // setting up the menu with just two items
+    const menu = Menu.buildFromTemplate([
+        {
+            label: 'Menu',
+            submenu: [
+                {
+                    label: 'Close',
+                    accelerator: 'CmdOrCtrl+W',
+                    click(_, browser) {
+                        browser.close()
+
+                        // TODO - should do this only if there are no more windows
+                        if (BrowserWindow.getAllWindows().length === 0) {
+                            app.quit()
+                        }
+                    }
+                },
+                {
+                    label: 'Exit',
+                    accelerator: 'CmdOrCtrl+Q',
+                    click() {
+                        app.quit()
+                    }
+                }
+            ]
+        },
+        {
+            label: 'File',
+            submenu: [
+                // TODO - add close file
+                {
+                    label: 'Open File',
+                    accelerator: 'CmdOrCtrl+O',
+                    // this is the main bit hijack the click event
+                    click() {
+                        // TODO - notify the client that file has been selected
+                    }
+                }
+            ]
+        },
+    ])
+    Menu.setApplicationMenu(menu)
+}
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
@@ -91,7 +140,7 @@ ipcMain.handle('pre-start-reading-file', async (event, filePath) => {
     try {
         fileStats = await fs.stat(filePath);
     } catch (e) {
-        if(e.code === 'ENOENT') {
+        if (e.code === 'ENOENT') {
             throw new Error('file not found');
         }
 
@@ -113,6 +162,8 @@ ipcMain.handle('pre-start-reading-file', async (event, filePath) => {
 });
 
 ipcMain.on('read-file-stream', async (event, filePath) => {
+    mainWindow.setRepresentedFilename(filePath);
+
     const eventNameForFileStreamChunks = `read-file-stream-${filePath}`
 
     // TODO

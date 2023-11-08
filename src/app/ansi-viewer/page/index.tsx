@@ -1,15 +1,18 @@
 import React from 'react'
 import {observer} from "mobx-react-lite";
 
-import {SmallAnsiFileViewer} from "../small-file-viewer";
+import {LargeAnsiFileViewer} from "../large-file-viewer";
+import {getContainer} from "../../stores/stores-container";
 
 
 function AnsiViewerPageComp() {
+    const {currentInstanceStore} = getContainer();
     return (
-        <SmallAnsiFileViewer />
+        <LargeAnsiFileViewer
+            key={'large-viewer-' + currentInstanceStore.refreshKey}
+        />
     )
 }
-
 
 
 export const AnsiViewerPage = observer(AnsiViewerPageComp);

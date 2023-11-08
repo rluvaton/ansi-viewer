@@ -1,4 +1,4 @@
-import {action, makeObservable, observable} from "mobx";
+import {action, makeObservable, observable, reaction} from "mobx";
 import {getContainer} from "./stores-container";
 
 type FileSelectingState = 'idle' | 'selecting' | 'selected' | 'error';
@@ -7,16 +7,52 @@ export class FileSelectorStore {
     public currentFilePath: string | undefined;
     public fileSelectingState: FileSelectingState = 'idle';
 
-    constructor() {
+    constructor(cleanupSignal: AbortSignal) {
         makeObservable(this, {
             currentFilePath: observable,
             fileSelectingState: observable,
+            refresh: action,
             selectFile: action,
             noFileSelected: action,
             errorSelectingFile: action,
             errorReadingFile: action,
             setFileAsSelected: action,
-        })
+        });
+
+        const {currentInstanceStore} = getContainer();
+        reaction(() => currentInstanceStore.refreshKey, () => this.refresh(), {
+            signal: cleanupSignal
+        });
+    }
+
+    async refresh() {
+        const {currentFileStore} = getContainer();
+
+        switch (this.fileSelectingState) {
+            case 'idle':
+                break;
+            case 'selecting':
+                this.fileSelectingState = 'idle';
+                this.currentFilePath = undefined;
+                currentFileStore.reset();
+                await this.selectFile()
+                break;
+            case 'selected':
+                if (this.currentFilePath) {
+                    await currentFileStore.selectFile(this.currentFilePath, true);
+                } else {
+                    this.fileSelectingState = 'idle';
+                }
+                break;
+            case 'error':
+                this.fileSelectingState = 'idle';
+                this.currentFilePath = undefined;
+                currentFileStore.reset();
+                break;
+
+            default:
+                throw new Error(`Unknown file selecting state: ${this.fileSelectingState}`);
+        }
     }
 
     selectFile = async () => {
@@ -33,13 +69,17 @@ export class FileSelectorStore {
                 this.noFileSelected(prevState, prevFilePath);
                 return;
             }
-
-            this.setFileAsSelected(filePathToRead);
         } catch (error) {
             this.errorSelectingFile({prevFilePath, error});
             return;
         }
 
+        await this.onFileSelected(filePathToRead);
+
+    }
+
+    onFileSelected = async (filePathToRead: string) => {
+        this.setFileAsSelected(filePathToRead);
         // TODO - while selecting file we should allow to select another file and abort the previous one
 
         try {
@@ -48,7 +88,6 @@ export class FileSelectorStore {
         } catch (error) {
             this.errorReadingFile(error);
         }
-        // TODO - read file?
     }
 
     noFileSelected(prevState: FileSelectingState, prevFilePath: string | undefined) {

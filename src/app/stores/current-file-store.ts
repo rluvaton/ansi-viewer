@@ -1,27 +1,43 @@
 import {action, makeObservable, observable} from "mobx";
-import {colorizeAnsi} from "../ansi-viewer/colorize";
+import {buildLines, Line} from "../ansi-viewer/colorize";
 
 type CurrentFileState = 'idle' | 'reading' | 'read' | 'error';
 
 export class CurrentFileStore {
     fileContent: string | undefined;
     currentFileState: CurrentFileState = 'idle';
-    viewerContainer: HTMLElement | undefined;
+
+    commonStyleElement: HTMLStyleElement;
+    lines: Line[] = [];
+
+    resetAbortController: AbortController = new AbortController();
 
     constructor() {
         makeObservable(this, {
             currentFileState: observable,
             fileContent: observable,
-            viewerContainer: observable,
+            reset: action,
             selectFile: action,
             setFileContent: action,
             setAsReading: action,
-            setViewerContainer: action,
-            clearViewerContainer: action,
-        })
+            loadMoreLines: action,
+        });
+
+        this.commonStyleElement = document.querySelector('style#common-style') as HTMLStyleElement;
     }
 
-    async selectFile(filePath: string) {
+    reset() {
+        this.resetAbortController.abort();
+        this.resetAbortController = new AbortController();
+        this.currentFileState = 'idle';
+        this.fileContent = undefined;
+        this.lines = [];
+    }
+
+    async selectFile(filePath: string, resetBefore = false) {
+        if(resetBefore) {
+            this.reset();
+        }
         this.currentFileState = 'reading';
 
         try {
@@ -32,36 +48,27 @@ export class CurrentFileStore {
             for await (const item of dataIterator) {
                 fullContent += item;
             }
-            this.setFileContent(fullContent);
+            await this.setFileContent(fullContent);
         } catch (error) {
             this.setErrorWhileReadingFile(filePath, error);
             return;
         }
-
-        // If while reading, we have the viewer container, colorize the file
-        if(this.viewerContainer) {
-            await this.colorizeSelectedFile(this.viewerContainer);
-        }
     }
 
-    setFileContent(content: string) {
+    async setFileContent(content: string) {
         this.fileContent = content;
         this.currentFileState = 'read';
-    }
-
-    async colorizeSelectedFile(container: HTMLElement) {
-        const styleElement = document.querySelector('style#common-style') as HTMLStyleElement;
-        await colorizeAnsi({
-            text: this.fileContent,
-            container: container,
-            styleElement: styleElement,
+        this.lines = await buildLines({
+            styleElement: this.commonStyleElement,
+            text: content,
+            signal: this.resetAbortController.signal
         });
+
+        console.log('done reading file', this.lines);
     }
 
-    private async *readFileIterator(filePathToRead: string) {
+    private async* readFileIterator(filePathToRead: string) {
         console.log('start reading file', filePathToRead)
-        await window.electron.preStartReadingFile(filePathToRead);
-
         this.setAsReading();
 
         // Promise to wait for the next value to be ready
@@ -74,44 +81,80 @@ export class CurrentFileStore {
 
         // Values that pile up until the iterator is ready to consume them
         const values: string[] = [];
+        const valuesOutOfOrder: {index: number, value: string}[] = [];
+        let currentChunkIndex = -1;
 
-        function fileStreamChunkListener(_: unknown, chunk: string) {
-            // TODO - handle errors and back-pressure
-            values.push(chunk);
-            resolve();
+        let timeoutTimer: NodeJS.Timeout;
+
+        function fileStreamChunkListener(_: unknown, chunkIndex: number, chunk: string) {
+            clearTimeout(timeoutTimer);
+
+            timeoutTimer = setTimeout(() => {
+                const timeoutError = new Error(`Timeout while reading file ${filePathToRead}`);
+                console.error(timeoutError);
+                reject(timeoutError);
+            }, 5000);
+
+            // We can receive chunks in the wrong order that was sent, so we need to sort them
+            if(chunkIndex === currentChunkIndex + 1) {
+                currentChunkIndex++;
+                values.push(chunk);
+
+                while(valuesOutOfOrder.length > 0 && valuesOutOfOrder[0].index === currentChunkIndex + 1) {
+                    currentChunkIndex++;
+                    values.push(valuesOutOfOrder.shift()!.value);
+                }
+
+                // TODO - handle errors and back-pressure
+                resolve();
+            } else {
+                valuesOutOfOrder.push({index: chunkIndex, value: chunk});
+
+                // Sort by index
+                valuesOutOfOrder.sort((a, b) => a.index - b.index);
+            }
         }
 
         // Attach the listener before reading the file to avoid missing data
         window.electron.listenToFileChunks(filePathToRead, fileStreamChunkListener);
         window.electron.startReadingFile(filePathToRead);
 
-        while (true) {
-            // Waiting for the next value to be ready
-            await promise;
+        function onAbort() {
+            reject('Aborted');
+        }
 
-            // Reset the promise for the next value
-            promise = new Promise((res, rej) => {
-                resolve = res;
-                reject = rej;
-            });
+        this.resetAbortController.signal.addEventListener('abort', onAbort, {once: true});
 
-            // Copy the values to a new array and clear the original so we won't re-read them
-            const valuesCopy = [...values];
-            values.length = 0;
+        try {
+            while (true) {
+                // Waiting for the next value to be ready
+                await promise;
 
+                // Reset the promise for the next value
+                promise = new Promise((res, rej) => {
+                    resolve = res;
+                    reject = rej;
+                });
 
-            // Yield the values
-            for (const value of valuesCopy) {
+                // Copy the values to a new array and clear the original so we won't re-read them
+                const valuesCopy = [...values];
+                values.length = 0;
 
-                // null means we reached the end of the file
-                if (value === null) {
-                    window.electron.cleanupFileChunkListener(filePathToRead, fileStreamChunkListener);
+                // Yield the values
+                for (const value of valuesCopy) {
 
-                    return;
+                    // null means we reached the end of the file
+                    if (value === null) {
+                        return;
+                    }
+
+                    yield value;
                 }
-
-                yield value;
             }
+        } finally {
+            clearTimeout(timeoutTimer);
+            window.electron.cleanupFileChunkListener(filePathToRead, fileStreamChunkListener);
+            this.resetAbortController.signal.removeEventListener('abort', onAbort);
         }
     }
 
@@ -126,16 +169,18 @@ export class CurrentFileStore {
         this.fileContent = undefined;
     }
 
-    setViewerContainer(container: HTMLElement) {
-        this.viewerContainer = container;
-
-        // If the file is already read, colorize it
-        if(this.currentFileState === 'read') {
-            return this.colorizeSelectedFile(container);
-        }
+    isLineNumberLoaded = (lineNumber: number) => {
+        // TODO - implement by asking the backend if read that line synchronously
+        // TODO - should then cache the lines that are loaded and not ask again until reading new lines that are not part of the current view + buffer
+        return this.currentFileState === 'read' && this.lines[lineNumber] !== undefined;
     }
 
-    clearViewerContainer() {
-        this.viewerContainer = undefined;
+    loadMoreLines = async (startLineNumber: number, endLineNumber: number) => {
+        // TODO - implement by asking the backend to read the lines and parse it here
+    }
+
+    // the generated class name is the one that in the common style, style element
+    getLine(lineNumber: number): Line | undefined {
+        return this.lines[lineNumber];
     }
 }

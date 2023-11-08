@@ -42,6 +42,20 @@ function setMainMenu() {
             label: 'Menu',
             submenu: [
                 {
+                    label: 'Refresh',
+                    accelerator: 'CmdOrCtrl+R',
+                    click(_, browser) {
+                        browser.webContents.send('soft-refresh');
+                    }
+                },
+                {
+                    label: 'Hard Refresh',
+                    accelerator: 'CmdOrCtrl+Shift+R',
+                    click(_, browser) {
+                        browser.reload();
+                    }
+                },
+                {
                     label: 'Close',
                     accelerator: 'CmdOrCtrl+W',
                     click(_, browser) {
@@ -70,8 +84,15 @@ function setMainMenu() {
                     label: 'Open File',
                     accelerator: 'CmdOrCtrl+O',
                     // this is the main bit hijack the click event
-                    click() {
-                        // TODO - notify the client that file has been selected
+                    async click(_, browser) {
+                        // TODO - catch missing access errors and open dialog with error
+                        const selectedFile = await selectFile();
+
+                        if (!selectedFile) {
+                            return;
+                        }
+                        // TODO - open window with the selected file if no window is open or replace the current one?
+                        browser.webContents.send('file-selected', selectedFile);
                     }
                 }
             ]
@@ -108,24 +129,31 @@ app.on('activate', () => {
 // code. You can also put them in separate files and import them here.
 
 
-ipcMain.handle('select-file', async () => {
-    // TODO - remove this
-    const defaultPath = '/Users/rluvaton/dev/personal/ansi-viewer/examples'
-
+async function selectFile() {
+    let selectedFilePath: string;
     try {
-        const result = await dialog.showOpenDialog({properties: ['openFile'], defaultPath: defaultPath});
+        const result = await dialog.showOpenDialog({
+            properties: ['openFile'],
+            // TODO - remove this
+            defaultPath: '/Users/rluvaton/dev/personal/ansi-viewer/examples'
+        });
         if (result.canceled) {
             console.log('canceled');
             return undefined;
         }
-        return result.filePaths[0];
+
+        selectedFilePath = result.filePaths[0];
     } catch (err) {
         console.error('Failed to get file', err);
         return undefined
     }
-});
 
-ipcMain.handle('pre-start-reading-file', async (event, filePath) => {
+    await assertFileAccessible(selectedFilePath);
+
+    return selectedFilePath;
+}
+
+async function assertFileAccessible(filePath: string) {
     // Make sure the path:
     // - exists
     // - a file
@@ -157,9 +185,13 @@ ipcMain.handle('pre-start-reading-file', async (event, filePath) => {
     } catch (e) {
         throw new Error('Access denied');
     }
+}
 
-    return true;
-});
+ipcMain.handle('select-file', selectFile);
+
+ipcMain.on('get-window-id', (event) => {
+    event.returnValue = event.sender.id;
+})
 
 ipcMain.on('read-file-stream', async (event, filePath) => {
     console.log('read-file-stream', filePath)
@@ -172,16 +204,18 @@ ipcMain.on('read-file-stream', async (event, filePath) => {
     //  - if no ping than clean up so we don't have memory leak
     //  - add error handling
     //  - add cancellation
+    //  - soft refresh should cancel the current file read
 
     const stream = createReadStream(filePath)
     try {
+        let index = 0;
         for await (const chunk of stream) {
-            console.log('chunk')
-            event.sender.send(eventNameForFileStreamChunks, chunk.toString())
+            event.sender.send(eventNameForFileStreamChunks, index, chunk.toString());
+            index++;
         }
 
         console.log('finish')
-        event.sender.send(eventNameForFileStreamChunks, null)
+        event.sender.send(eventNameForFileStreamChunks, index, null)
     } catch (e) {
         console.error('failed to read file', e)
         // TODO - send error

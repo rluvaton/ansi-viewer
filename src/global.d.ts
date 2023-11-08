@@ -5,7 +5,7 @@ type ListenToFileChunk = (event: IpcRendererEvent, chunk: string) => void;
 declare global {
     interface Window {
         electron: {
-            selectFile: () => Promise<void>,
+            selectFile: () => Promise<string>,
 
             // --- Read file related ---
             preStartReadingFile(filePathToRead: string): Promise<void>,

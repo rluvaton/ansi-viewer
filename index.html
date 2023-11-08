@@ -2,40 +2,10 @@
 <html>
 <head>
     <meta charset="UTF-8"/>
-    <title>Hello World!</title>
-
-    <style>
-        #container {
-            display: inline;
-        }
-
-        #container > pre {
-            display: inline;
-            margin: 0;
-        }
-
-        /* If container is empty than show landing page, otherwise hide */
-        #landing-page:has(~ #container:empty) {
-            display: block;
-        }
-
-        #landing-page:has(~ #container:not(:empty)) {
-            display: none;
-        }
-
-    </style>
-
-    <style id="common-style"></style>
-
+    <title>ANSI viewer</title>
 </head>
 <body>
 <div id="root"></div>
-
-<script type="module" src="/src/app/App.tsx"></script>
-
-<!-- TODO - add search-->
-<div id="container"></div>
-
-<script type="module" src="/src/renderer.ts"></script>
+<script type="module" src="/src/app/index.tsx"></script>
 </body>
 </html>

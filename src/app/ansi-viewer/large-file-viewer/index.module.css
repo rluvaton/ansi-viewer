@@ -1,4 +1,5 @@
-.ansiContainer {
+/* The div below is the container for the virtual list */
+.ansiContainer > div {
     display: inline;
 }
 

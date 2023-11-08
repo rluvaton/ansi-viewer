@@ -9,6 +9,7 @@ export class CurrentFileStore {
 
     commonStyleElement: HTMLStyleElement;
     lines: Line[] = [];
+    linesRerenderKey = 0;
 
     resetAbortController: AbortController = new AbortController();
 
@@ -16,8 +17,10 @@ export class CurrentFileStore {
         makeObservable(this, {
             currentFileState: observable,
             fileContent: observable,
+            linesRerenderKey: observable,
             reset: action,
             selectFile: action,
+            setLines: action,
             setFileContent: action,
             setAsReading: action,
             loadMoreLines: action,
@@ -58,13 +61,11 @@ export class CurrentFileStore {
     async setFileContent(content: string) {
         this.fileContent = content;
         this.currentFileState = 'read';
-        this.lines = await buildLines({
+        this.setLines(await buildLines({
             styleElement: this.commonStyleElement,
             text: content,
             signal: this.resetAbortController.signal
-        });
-
-        console.log('done reading file', this.lines);
+        }));
     }
 
     private async* readFileIterator(filePathToRead: string) {
@@ -91,7 +92,12 @@ export class CurrentFileStore {
 
             timeoutTimer = setTimeout(() => {
                 const timeoutError = new Error(`Timeout while reading file ${filePathToRead}`);
-                console.error(timeoutError);
+                console.error(timeoutError.message, {
+                    values: [...values],
+                    valuesOutOfOrder: [...valuesOutOfOrder],
+                    currentChunkIndex,
+                    error: timeoutError
+                });
                 reject(timeoutError);
             }, 5000);
 
@@ -182,5 +188,10 @@ export class CurrentFileStore {
     // the generated class name is the one that in the common style, style element
     getLine(lineNumber: number): Line | undefined {
         return this.lines[lineNumber];
+    }
+
+    setLines(lines: Line[]) {
+        this.lines = lines;
+        this.linesRerenderKey++;
     }
 }

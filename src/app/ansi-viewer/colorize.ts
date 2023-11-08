@@ -1,4 +1,4 @@
-import {parseIterator as parseAnsi, ParsedSpan} from "ansicolor";
+import {parseIterator as parseAnsi} from "ansicolor";
 
 export type Line = {
     text: string, className: string
@@ -124,3 +124,5 @@ export async function buildLines({styleElement, text, signal}: {
         },
     });
 }
+
+// TODO - split to blocks of data that enough for viewing single page and then some and compress them so they can take less memory

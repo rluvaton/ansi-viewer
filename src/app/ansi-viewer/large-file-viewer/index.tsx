@@ -77,8 +77,7 @@ function LineCode({index, style}: ListChildComponentProps) {
     }
 
     return (
-        <div key={index} style={style} dangerouslySetInnerHTML={lineContent.html}>
-        </div>
+        <div key={index} style={style} dangerouslySetInnerHTML={lineContent}></div>
     )
 }
 

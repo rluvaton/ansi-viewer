@@ -110,12 +110,9 @@ pre.${className} {
 
         let lineIndex = 0;
 
-        let currentLine: Line = {
+        let currentLine: {lineIndex: number, items: LineItem[]} = {
             lineIndex,
             items: [],
-            html: {
-                __html: ''
-            },
         };
 
         // TODO - use streams so we don't need to load the whole file into memory and to support large files above 1GB
@@ -149,8 +146,7 @@ pre.${className} {
                     text: linesInSpan[0],
                     className
                 });
-                currentLine.html = buildHtmlForItems(currentLine.lineIndex, currentLine.items);
-                this.lines.push(currentLine);
+                this.lines.push(buildHtmlForItems(currentLine.lineIndex, currentLine.items));
                 lineIndex++;
 
                 // Without first and last lines so the first line can be combined with the last line of the previous span
@@ -160,20 +156,13 @@ pre.${className} {
                         text: linesInSpan[j],
                         className
                     }];
-                    this.lines.push({
-                        lineIndex: lineIndex,
-                        html: buildHtmlForItems(lineIndex, newLine),
-                        items: newLine
-                    });
+                    this.lines.push(buildHtmlForItems(lineIndex, newLine));
                     lineIndex++;
                 }
 
                 currentLine = {
                     lineIndex: lineIndex,
                     items: [],
-                    html: {
-                        __html: ''
-                    }
                 }
 
                 // If not empty
@@ -191,8 +180,7 @@ pre.${className} {
         }
 
         if (currentLine) {
-            currentLine.html = buildHtmlForItems(currentLine.lineIndex, currentLine.items);
-            this.lines.push(currentLine);
+            this.lines.push(buildHtmlForItems(currentLine.lineIndex, currentLine.items));
         }
 
         if(this.lines.length) {
@@ -229,7 +217,7 @@ pre.${className} {
 }
 
 
-function buildHtmlForItems(lineIndex: number, items: LineItem[]) {
-    return {__html: `<code class="line-number">${lineIndex + 1}</code>${items.map((item) => `<pre ${item.className ? `class="${item.className}"` : ''}>${item.text}</pre>`).join('')}`}
+function buildHtmlForItems(lineIndex: number, items: LineItem[]): Line {
+    return {lineIndex, __html: `<code class="line-number">${lineIndex + 1}</code>${items.map((item) => `<pre ${item.className ? `class="${item.className}"` : ''}>${item.text}</pre>`).join('')}`}
 }
 

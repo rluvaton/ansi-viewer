@@ -14,9 +14,8 @@ export interface LineItem {
 }
 
 export type Line = {
-    items: LineItem[],
-    lineIndex: number,
-    html: { __html: string };
+    lineIndex: number;
+    __html: string;
 };
 
 export type ListenToFileChunk = (event: IpcRendererEvent, chunkIndex: number, chunk: string) => void;

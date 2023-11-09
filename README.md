@@ -9,13 +9,16 @@ Available as [Chrome extension](https://chromewebstore.google.com/detail/coloriz
 ### Why not just use the extension above?
 You should. I do. But not for large files (around 100 MB) as the browser is too slow and can crash **before even finishing loading the page** so the browser extension can't even start
 
+### But Electron is running a browser, so how can it handle that
+Because we don't render the entire file
+
 ### Why not some VS Code extension?
 You can use the existing extension but it won't work for files larger than 50MB due to [VS Code limitation](https://github.com/microsoft/vscode/issues/32118)
 
-### Why in electron?, JavaScript is not the fastest
+### Why in Electron? JavaScript is not the fastest
 I tried creating the app in Swift and making it MacOS only if it would be better for performance
 
-but Whenever I tried to load a file around 5MB it just used too much memory and I don't have much experience with Swift to use Swift specific optimization
+but whenever I tried to load a file around 5MB it just used too much memory and I don't have much experience with Swift to use Swift-specific optimization
 
 ### So Why it takes too long to open a single file
 This is one of the things I still need to fix, I should parse as I read the file for fast opening 

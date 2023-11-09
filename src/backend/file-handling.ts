@@ -5,8 +5,11 @@ import {getWindowFromEvent} from "./helper";
 import {OpenedFileState} from "./ansi-file/open-file-state";
 import {ParsedFileState} from "./ansi-file/parsed-ansi-file";
 import {FileParsedEvent} from "../shared-types";
+import prettyBytes from "pretty-bytes";
 
 // TODO - listen for scroll events/search and send them to the renderer
+
+let counter = 0;
 
 async function selectFile() {
     let selectedFilePath: string;
@@ -108,7 +111,6 @@ export async function openFile(window: BrowserWindow, requestedFromClient: boole
 
     if (!filePath) {
         window.webContents.send('file-selected', filePath);
-
         window.webContents.send('file-parsed', undefined);
         return undefined;
     }
@@ -118,7 +120,9 @@ export async function openFile(window: BrowserWindow, requestedFromClient: boole
     // Just to let the renderer know that the file was selected
     window.webContents.send('file-selected', filePath);
 
+    console.time('openFile: parse file');
     const parsed = await OpenedFileState.parseNewFile(window, filePath);
+    console.timeEnd('openFile: parse file');
 
     window.webContents.send('file-parsed', {
         filePath,
@@ -140,5 +144,20 @@ ipcMain.handle('get-lines', async (event, fromLineNumber) => {
         throw new Error('No file opened');
     }
 
-    return await parsed.getLines(fromLineNumber);
-})
+    const currentNum = counter++;
+    console.time(`get lines ${currentNum}`);
+    const requestedLines = await parsed.getLines(fromLineNumber);
+    console.timeEnd(`get lines ${currentNum}`);
+
+    return requestedLines;
+});
+
+setInterval(() => {
+    console.log(
+        'Memory usage',
+        Object.fromEntries(
+            Object.entries(process.memoryUsage())
+                .map(([key, value]) => [key, prettyBytes(value)])
+        )
+    );
+}, 1000);

@@ -76,6 +76,12 @@ export class LinesStorage {
         }
     }
 
+    addBlocks(blocks: Line[][]) {
+        for(const block of blocks) {
+            this.addLines(block);
+        }
+    }
+
     reset() {
         this.#lines = [];
     }

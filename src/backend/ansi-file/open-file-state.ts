@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import {parseIterator as parseAnsi} from "ansicolor";
 import {BrowserWindow} from "electron";
-import {Line} from "../../shared-types";
+import {Line, LineItem} from "../../shared-types";
 import {ParsedFileState} from "./parsed-ansi-file";
 import {LINES_BLOCK_SIZE} from "../../shared/constants";
 
@@ -108,12 +108,14 @@ pre.${className} {
             throw new Error('Aborted');
         }
 
-        let i = 0;
         let lineIndex = 0;
 
         let currentLine: Line = {
             lineIndex,
             items: [],
+            html: {
+                __html: ''
+            },
         };
 
         // TODO - use streams so we don't need to load the whole file into memory and to support large files above 1GB
@@ -147,18 +149,21 @@ pre.${className} {
                     text: linesInSpan[0],
                     className
                 });
+                currentLine.html = buildHtmlForItems(currentLine.lineIndex, currentLine.items);
                 this.lines.push(currentLine);
                 lineIndex++;
 
                 // Without first and last lines so the first line can be combined with the last line of the previous span
                 // and the last line can be combined with the first line of the next span
                 for (let j = 1; j < linesInSpan.length - 1; j++) {
+                    const newLine = [{
+                        text: linesInSpan[j],
+                        className
+                    }];
                     this.lines.push({
                         lineIndex: lineIndex,
-                        items: [{
-                            text: linesInSpan[i],
-                            className
-                        }]
+                        html: buildHtmlForItems(lineIndex, newLine),
+                        items: newLine
                     });
                     lineIndex++;
                 }
@@ -166,6 +171,9 @@ pre.${className} {
                 currentLine = {
                     lineIndex: lineIndex,
                     items: [],
+                    html: {
+                        __html: ''
+                    }
                 }
 
                 // If not empty
@@ -176,7 +184,6 @@ pre.${className} {
                     });
                 }
             }
-            i++;
 
             if(this.lines.length > LINES_BLOCK_SIZE) {
                 await this.addBlocks(parsedAnsiFile, false);
@@ -184,6 +191,7 @@ pre.${className} {
         }
 
         if (currentLine) {
+            currentLine.html = buildHtmlForItems(currentLine.lineIndex, currentLine.items);
             this.lines.push(currentLine);
         }
 
@@ -220,4 +228,8 @@ pre.${className} {
 
 }
 
+
+function buildHtmlForItems(lineIndex: number, items: LineItem[]) {
+    return {__html: `<code class="line-number">${lineIndex + 1}</code>${items.map((item) => `<pre ${item.className ? `class="${item.className}"` : ''}>${item.text}</pre>`).join('')}`}
+}
 

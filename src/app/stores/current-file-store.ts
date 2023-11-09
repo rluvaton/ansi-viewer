@@ -1,6 +1,7 @@
 import {action, makeObservable, observable} from "mobx";
 import {FileParsedEvent, Line} from "../../shared-types";
 import {LinesStorage} from "../lines-storage";
+import {LINES_BLOCK_SIZE} from "../../shared/constants";
 
 type CurrentFileState = 'idle' | 'reading' | 'read' | 'error';
 
@@ -12,7 +13,6 @@ export class CurrentFileStore {
     linesStorage: LinesStorage = new LinesStorage(10);
     totalLines = 0;
     linesRerenderKey = 0;
-    currentLineNumber: number | undefined;
 
     resetAbortController: AbortController = new AbortController();
 
@@ -180,13 +180,22 @@ export class CurrentFileStore {
     }
 
     loadMoreLines = async (startLineNumber: number, endLineNumber: number) => {
-        if(startLineNumber >= this.totalLines) {
+        if (startLineNumber >= this.totalLines) {
             return;
         }
 
-        // TODO - support endLineNumber
-        this.linesStorage.addLines(await window.electron.getLines(startLineNumber));
-        this.currentLineNumber = startLineNumber;
+        if (endLineNumber >= this.totalLines) {
+            endLineNumber = this.totalLines - 1;
+        }
+
+        // TODO - support endLineNumber in backend
+        const numberOfBlocks = Math.ceil((endLineNumber - startLineNumber) / LINES_BLOCK_SIZE);
+
+        console.log(`Load more lines from: ${startLineNumber} to ${endLineNumber}`);
+
+        this.linesStorage.addBlocks(
+            await Promise.all(Array.from({ length: numberOfBlocks }, (_, i) => window.electron.getLines(startLineNumber + (i * LINES_BLOCK_SIZE))))
+        );
     }
 
     // the generated class name is the one that in the common style, style element

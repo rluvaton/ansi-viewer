@@ -30,6 +30,9 @@ function LargeAnsiFileViewerComp() {
             itemCount={numberOfLines}
             loadMoreItems={currentFileStore.loadMoreLines}
             minimumBatchSize={LINES_BLOCK_SIZE}
+
+            // fetch 5 more blocks so it will be smoother
+            threshold={LINES_BLOCK_SIZE * 5}
         >
             {({onItemsRendered, ref}) =>
                 (
@@ -51,6 +54,8 @@ function LargeAnsiFileViewerComp() {
                                 // this is the line height
                                 // TODO - change to the actual line height by calculating it
                                 itemSize={22}
+
+                                overscanCount={LINES_BLOCK_SIZE * 3}
                             >
                                 {LineCode}
                             </FixedSizeList>
@@ -65,18 +70,14 @@ function LargeAnsiFileViewerComp() {
 function LineCode({index, style}: ListChildComponentProps) {
     const {currentFileStore} = getContainer();
 
-    // TODO - render line, this should already be in the store parsed
-    if (!currentFileStore.isLineNumberLoaded(index)) {
+    const lineContent = currentFileStore.getLine(index);
+
+    if(!lineContent) {
         return null;
     }
 
-    const lineContent = currentFileStore.getLine(index);
-
     return (
-        <div key={index} style={style}>{
-            lineContent.items.map((item, lineItemIndex) =>
-                <pre key={lineItemIndex} className={item.className}>{item.text}</pre>
-            )}
+        <div key={index} style={style} dangerouslySetInnerHTML={lineContent.html}>
         </div>
     )
 }

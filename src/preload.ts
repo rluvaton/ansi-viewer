@@ -2,9 +2,7 @@
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
 
 import {contextBridge, ipcRenderer} from "electron";
-import IpcRendererEvent = Electron.IpcRendererEvent;
-
-type ListenToFileChunk = (event: IpcRendererEvent, chunkIndex: number, chunk: string) => void;
+import {FileParsedEvent, Line, OnFileSelectedCallback} from "./shared-types";
 
 contextBridge.exposeInMainWorld('electron', {
     // --- General ---
@@ -16,11 +14,21 @@ contextBridge.exposeInMainWorld('electron', {
     selectFile: () => ipcRenderer.invoke('select-file'),
 
     // From menu bar or keyboard shortcut
-    onFileSelected: (cb: (event: IpcRendererEvent, selectedFilePath: string) => void) => ipcRenderer.on('file-selected', cb),
-    offFileSelected: (cb: (event: IpcRendererEvent, selectedFilePath: string) => void) => ipcRenderer.off('file-selected', cb),
+    onFileSelected: (cb: OnFileSelectedCallback) => ipcRenderer.on('file-parsed', cb),
+    offFileSelected: (cb: OnFileSelectedCallback) => ipcRenderer.off('file-parsed', cb),
+
+    waitForNewFile(): Promise<FileParsedEvent | undefined> {
+        return new Promise((resolve) => {
+            ipcRenderer.once('file-parsed', (_, fileParsedEventData: FileParsedEvent) => resolve(fileParsedEventData));
+        });
+    },
 
     // --- Read file related ---
-    listenToFileChunks: (filePathToRead: string, cb: ListenToFileChunk) => ipcRenderer.on(`read-file-stream-${filePathToRead}`, cb),
-    cleanupFileChunkListener: (filePathToRead: string, cb: ListenToFileChunk) => ipcRenderer.off(`read-file-stream-${filePathToRead}`, cb),
-    startReadingFile: (filePathToRead: string) => ipcRenderer.send('read-file-stream', filePathToRead),
+    getLines(fromLine: number): Line[] {
+        // TODO - should we use invoke instead? so it will not block the main thread?
+        return ipcRenderer.sendSync('get-lines', fromLine);
+    },
+    // listenToFileChunks: (filePathToRead: string, cb: ListenToFileChunk) => ipcRenderer.on(`read-file-stream-${filePathToRead}`, cb),
+    // cleanupFileChunkListener: (filePathToRead: string, cb: ListenToFileChunk) => ipcRenderer.off(`read-file-stream-${filePathToRead}`, cb),
+    // startReadingFile: (filePathToRead: string) => ipcRenderer.send('read-file-stream', filePathToRead),
 });

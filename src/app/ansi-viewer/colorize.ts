@@ -1,8 +1,5 @@
 import {parseIterator as parseAnsi} from "ansicolor";
-
-export type Line = {
-    text: string, className: string
-}[]
+import {Line} from "../../shared-types";
 
 
 let idCounter = 0;

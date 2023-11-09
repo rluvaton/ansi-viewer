@@ -3,13 +3,14 @@ import {LandingPage} from "./landing-page";
 import {AnsiViewerPage} from "./ansi-viewer/page";
 import {getContainer} from "./stores/stores-container";
 import {observer} from "mobx-react-lite";
+import {FileParsedEvent} from "../shared-types";
 
 function App() {
     const {fileSelectorStore, currentFileStore, currentInstanceStore} = getContainer();
 
     useEffect(() => {
-        function onFileSelected(event: unknown, filePath: string) {
-            getContainer().fileSelectorStore.onFileSelected(filePath);
+        function onFileSelected(electronEvent: unknown, event: FileParsedEvent) {
+            getContainer().fileSelectorStore.onFileSelected(event);
         }
         window.electron.onFileSelected(onFileSelected);
 

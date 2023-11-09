@@ -1,6 +1,5 @@
-import {IpcRendererEvent} from "electron";
+import {FileParsedEvent, Line, ListenToFileChunk, OnFileSelectedCallback} from "./shared-types";
 
-type ListenToFileChunk = (event: IpcRendererEvent, chunkIndex: number, chunk: string) => void;
 
 declare global {
     interface Window {
@@ -13,13 +12,15 @@ declare global {
             // --- File selection ---
             selectFile(): Promise<string>,
 
-            onFileSelected(cb: (event: IpcRendererEvent, selectedFilePath: string) => void): void,
-            offFileSelected(cb: (event: IpcRendererEvent, selectedFilePath: string) => void): void,
+            onFileSelected(cb: OnFileSelectedCallback): void,
+            offFileSelected(cb: OnFileSelectedCallback): void,
+            waitForNewFile(): Promise<FileParsedEvent | undefined>,
 
             // --- Read file related ---
             listenToFileChunks(filePathToRead: string, cb: ListenToFileChunk): void,
             cleanupFileChunkListener(filePathToRead: string, cb: ListenToFileChunk): void,
             startReadingFile(filePathToRead: string): void,
-        }
+            getLines(fromLine: number): Line[],
+        },
     }
 }

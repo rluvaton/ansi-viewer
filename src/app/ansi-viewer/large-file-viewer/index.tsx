@@ -19,18 +19,18 @@ function LargeAnsiFileViewerComp() {
         return <div>Loading...</div>
     }
 
-    const numberOfLines = currentFileStore.lines.length
+    const numberOfLines = currentFileStore.totalLines
 
     return (
-        // <InfiniteLoader
-        //     // So it will re-render when the lines are loaded
-        //     // without making lines an observable (as it is a big array)
-        //     key={currentFileStore.linesRerenderKey}
-        //     isItemLoaded={currentFileStore.isLineNumberLoaded}
-        //     itemCount={numberOfLines}
-        //     loadMoreItems={currentFileStore.loadMoreLines}
-        // >
-        //     {({onItemsRendered, ref,}) => (
+        <InfiniteLoader
+            // So it will re-render when the lines are loaded
+            // without making lines an observable (as it is a big array)
+            key={currentFileStore.linesRerenderKey}
+            isItemLoaded={currentFileStore.isLineNumberLoaded}
+            itemCount={numberOfLines}
+            loadMoreItems={currentFileStore.loadMoreLines}
+        >
+            {({onItemsRendered, ref,}) => (
 
                 // TODO - should not be fixed
                 <FixedSizeList
@@ -38,8 +38,8 @@ function LargeAnsiFileViewerComp() {
 
                     // Should this be the current displayed lines?
                     itemCount={numberOfLines}
-                    // onItemsRendered={onItemsRendered}
-                    // ref={ref}
+                    onItemsRendered={onItemsRendered}
+                    ref={ref}
 
                     // TODO - make sure it's cached
                     height={currentInstanceStore.windowInnerHeight}
@@ -52,8 +52,8 @@ function LargeAnsiFileViewerComp() {
                 >
                     {LineCode}
                 </FixedSizeList>
-            // )}
-        // </InfiniteLoader>
+            )}
+        </InfiniteLoader>
     )
 }
 

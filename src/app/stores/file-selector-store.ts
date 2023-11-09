@@ -1,5 +1,6 @@
 import {action, makeObservable, observable, reaction} from "mobx";
 import {getContainer} from "./stores-container";
+import {FileParsedEvent} from "../../shared-types";
 
 type FileSelectingState = 'idle' | 'selecting' | 'selected' | 'error';
 
@@ -39,7 +40,7 @@ export class FileSelectorStore {
                 break;
             case 'selected':
                 if (this.currentFilePath) {
-                    await currentFileStore.selectFile(this.currentFilePath, true);
+                    currentFileStore.reselectSameFile(this.currentFilePath);
                 } else {
                     this.fileSelectingState = 'idle';
                 }
@@ -60,31 +61,40 @@ export class FileSelectorStore {
         const prevFilePath = this.currentFilePath;
 
         this.fileSelectingState = 'selecting';
-        let filePathToRead: string;
+        let selectedFileEvent: FileParsedEvent;
 
         try {
-            filePathToRead = await window.electron.selectFile();
-
-            if (!filePathToRead) {
-                this.noFileSelected(prevState, prevFilePath);
-                return;
-            }
+            ([selectedFileEvent] = await Promise.all([
+                window.electron.waitForNewFile(),
+                window.electron.selectFile(),
+            ]));
         } catch (error) {
             this.errorSelectingFile({prevFilePath, error});
             return;
         }
 
-        await this.onFileSelected(filePathToRead);
+        await this.onFileSelected(selectedFileEvent, {
+            state: prevState,
+            filePath: prevFilePath,
+        });
 
     }
 
-    onFileSelected = async (filePathToRead: string) => {
-        this.setFileAsSelected(filePathToRead);
+    onFileSelected = async (event: FileParsedEvent | undefined, prev?: {
+        state: FileSelectingState,
+        filePath: string | undefined,
+    }) => {
+        if (!event?.filePath && prev) {
+            this.noFileSelected(prev.state, prev.filePath);
+            return;
+        }
+
+        this.setFileAsSelected(event.filePath);
         // TODO - while selecting file we should allow to select another file and abort the previous one
 
         try {
             // TODO - different error based on error type
-            await getContainer().currentFileStore.selectFile(filePathToRead);
+            getContainer().currentFileStore.selectFile(event);
         } catch (error) {
             this.errorReadingFile(error);
         }

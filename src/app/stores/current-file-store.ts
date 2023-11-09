@@ -1,5 +1,5 @@
 import {action, makeObservable, observable} from "mobx";
-import {buildLines, Line} from "../ansi-viewer/colorize";
+import {FileParsedEvent, Line} from "../../shared-types";
 
 type CurrentFileState = 'idle' | 'reading' | 'read' | 'error';
 
@@ -9,7 +9,10 @@ export class CurrentFileStore {
 
     commonStyleElement: HTMLStyleElement;
     lines: Line[] = [];
+    linesLinkedList 
+    totalLines = 0;
     linesRerenderKey = 0;
+    currentLineNumber: number | undefined;
 
     resetAbortController: AbortController = new AbortController();
 
@@ -21,7 +24,6 @@ export class CurrentFileStore {
             reset: action,
             selectFile: action,
             setLines: action,
-            setFileContent: action,
             setAsReading: action,
             loadMoreLines: action,
         });
@@ -37,35 +39,27 @@ export class CurrentFileStore {
         this.lines = [];
     }
 
-    async selectFile(filePath: string, resetBefore = false) {
-        if(resetBefore) {
+    selectFile(event: FileParsedEvent, resetBefore = false) {
+        if (resetBefore) {
             this.reset();
         }
-        this.currentFileState = 'reading';
+        // this.currentFileState = 'reading';
 
-        try {
-            const dataIterator = this.readFileIterator(filePath);
-
-            // TODO - remove this after supporting async iterators in the colorizeAnsi function
-            let fullContent = '';
-            for await (const item of dataIterator) {
-                fullContent += item;
-            }
-            await this.setFileContent(fullContent);
-        } catch (error) {
-            this.setErrorWhileReadingFile(filePath, error);
-            return;
-        }
+        this.lines = event.firstLines;
+        this.totalLines = event.totalLines;
+        this.currentFileState = 'read';
+        this.linesRerenderKey++;
+        this.commonStyleElement.innerHTML = event.globalStyle;
     }
 
-    async setFileContent(content: string) {
-        this.fileContent = content;
-        this.currentFileState = 'read';
-        this.setLines(await buildLines({
-            styleElement: this.commonStyleElement,
-            text: content,
-            signal: this.resetAbortController.signal
-        }));
+    reselectSameFile(filePath: string) {
+        const firstLines = window.electron.getLines(0);
+        this.selectFile({
+            firstLines,
+            filePath,
+            totalLines: this.totalLines,
+            globalStyle: this.commonStyleElement.innerHTML,
+        }, true);
     }
 
     private async* readFileIterator(filePathToRead: string) {
@@ -82,7 +76,7 @@ export class CurrentFileStore {
 
         // Values that pile up until the iterator is ready to consume them
         const values: string[] = [];
-        const valuesOutOfOrder: {index: number, value: string}[] = [];
+        const valuesOutOfOrder: { index: number, value: string }[] = [];
         let currentChunkIndex = -1;
 
         let timeoutTimer: NodeJS.Timeout;
@@ -101,17 +95,17 @@ export class CurrentFileStore {
                 reject(timeoutError);
             }, 5000);
 
-            if(chunkIndex < currentChunkIndex + 1) {
+            if (chunkIndex < currentChunkIndex + 1) {
                 // We already read this chunk, ignore it
                 return;
             }
 
             // We can receive chunks in the wrong order that was sent, so we need to sort them
-            if(chunkIndex === currentChunkIndex + 1) {
+            if (chunkIndex === currentChunkIndex + 1) {
                 currentChunkIndex++;
                 values.push(chunk);
 
-                while(valuesOutOfOrder.length > 0 && valuesOutOfOrder[0].index === currentChunkIndex + 1) {
+                while (valuesOutOfOrder.length > 0 && valuesOutOfOrder[0].index === currentChunkIndex + 1) {
                     currentChunkIndex++;
                     values.push(valuesOutOfOrder.shift()!.value);
                 }
@@ -187,6 +181,9 @@ export class CurrentFileStore {
     }
 
     loadMoreLines = async (startLineNumber: number, endLineNumber: number) => {
+        // TODO - support endLineNumber
+        this.lines = window.electron.getLines(startLineNumber);
+        this.currentLineNumber = startLineNumber;
         // TODO - implement by asking the backend to read the lines and parse it here
     }
 

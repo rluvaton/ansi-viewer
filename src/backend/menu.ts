@@ -1,5 +1,5 @@
 import {app, BrowserWindow, Menu} from "electron";
-import {selectFile} from "./file-handling";
+import {openFile} from "./file-handling";
 
 export function setupMainMenu() {
 
@@ -53,13 +53,8 @@ export function setupMainMenu() {
                     // this is the main bit hijack the click event
                     async click(_, browser) {
                         // TODO - catch missing access errors and open dialog with error
-                        const selectedFile = await selectFile();
-
-                        if (!selectedFile) {
-                            return;
-                        }
                         // TODO - open window with the selected file if no window is open or replace the current one?
-                        browser.webContents.send('file-selected', selectedFile);
+                        await openFile(browser);
                     }
                 }
             ]

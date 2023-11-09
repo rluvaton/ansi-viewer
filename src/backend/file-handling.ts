@@ -1,11 +1,14 @@
-import {dialog, ipcMain} from "electron";
+import {BrowserWindow, dialog, ipcMain} from "electron";
 import * as fs from "node:fs/promises";
 import {createReadStream} from "node:fs";
 import {getWindowFromEvent} from "./helper";
+import {OpenedFileState} from "./ansi-file/open-file-state";
+import {ParsedFileState} from "./ansi-file/parsed-ansi-file";
+import {FileParsedEvent} from "../shared-types";
 
 // TODO - listen for scroll events/search and send them to the renderer
 
-export async function selectFile() {
+async function selectFile() {
     let selectedFilePath: string;
     try {
         const result = await dialog.showOpenDialog({
@@ -24,6 +27,10 @@ export async function selectFile() {
         return undefined
     }
 
+    if (!selectedFilePath) {
+        return undefined;
+    }
+
     await assertFileAccessible(selectedFilePath);
 
     return selectedFilePath;
@@ -35,9 +42,6 @@ async function assertFileAccessible(filePath: string) {
     // - a file
     // - have read access
 
-    if (!filePath) {
-        throw new Error('no file path provided');
-    }
 
     let fileStats;
 
@@ -63,35 +67,77 @@ async function assertFileAccessible(filePath: string) {
     }
 }
 
-ipcMain.handle('select-file', selectFile);
+ipcMain.handle('select-file', async (event) => {
+    return await openFile(getWindowFromEvent(event));
+});
 
-ipcMain.on('read-file-stream', async (event, filePath) => {
-    console.log('read-file-stream', filePath);
+// ipcMain.on('read-file-stream', async (event, filePath) => {
+//     console.log('read-file-stream', filePath);
+//
+//     getWindowFromEvent(event)?.setRepresentedFilename(filePath);
+//
+//     const eventNameForFileStreamChunks = `read-file-stream-${filePath}`
+//
+//     // TODO
+//     //  - add back pressure
+//     //  - if no ping than clean up so we don't have memory leak
+//     //  - add error handling
+//     //  - add cancellation
+//     //  - soft refresh should cancel the current file read
+//
+//     const stream = createReadStream(filePath)
+//     try {
+//         let index = 0;
+//         for await (const chunk of stream) {
+//             event.sender.send(eventNameForFileStreamChunks, index, chunk.toString());
+//             index++;
+//         }
+//
+//         console.log('finish')
+//         event.sender.send(eventNameForFileStreamChunks, index, null)
+//     } catch (e) {
+//         console.error('failed to read file', e)
+//         // TODO - send error
+//         event.sender.send(eventNameForFileStreamChunks, null)
+//     }
+// })
 
-    getWindowFromEvent(event)?.setRepresentedFilename(filePath);
 
-    const eventNameForFileStreamChunks = `read-file-stream-${filePath}`
+export async function openFile(window: BrowserWindow) {
+    const filePath = await selectFile();
 
-    // TODO
-    //  - add back pressure
-    //  - if no ping than clean up so we don't have memory leak
-    //  - add error handling
-    //  - add cancellation
-    //  - soft refresh should cancel the current file read
+    if (!filePath) {
+        window.webContents.send('file-selected', filePath);
 
-    const stream = createReadStream(filePath)
-    try {
-        let index = 0;
-        for await (const chunk of stream) {
-            event.sender.send(eventNameForFileStreamChunks, index, chunk.toString());
-            index++;
-        }
-
-        console.log('finish')
-        event.sender.send(eventNameForFileStreamChunks, index, null)
-    } catch (e) {
-        console.error('failed to read file', e)
-        // TODO - send error
-        event.sender.send(eventNameForFileStreamChunks, null)
+        window.webContents.send('file-parsed', undefined);
+        return undefined;
     }
+
+    window.setRepresentedFilename(filePath);
+
+    // Just to let the renderer know that the file was selected
+    window.webContents.send('file-selected', filePath);
+
+    const parsed = await OpenedFileState.parseNewFile(window, filePath);
+
+    window.webContents.send('file-parsed', {
+        filePath,
+        totalLines: parsed.totalLines,
+        firstLines: parsed.getLines(0),
+        globalStyle: parsed.commonStyle,
+    } satisfies FileParsedEvent);
+
+    return filePath;
+}
+
+ipcMain.on('get-lines', (event, fromLineNumber) => {
+    const window = getWindowFromEvent(event);
+
+    const parsed = ParsedFileState.getOpenedFileState(window)
+
+    if (!parsed) {
+        throw new Error('No file opened');
+    }
+
+    event.returnValue = parsed.getLines(fromLineNumber);
 })

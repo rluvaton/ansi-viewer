@@ -1,7 +1,7 @@
 import * as zlib from "node:zlib";
-import {BLOCK_SIZE} from "./lines-block-coordinator";
 import { promisify } from "node:util";
 import {Line} from "../../shared-types";
+import {LINES_BLOCK_SIZE} from "../../shared/constants";
 
 
 const unzip = promisify(zlib.unzip);
@@ -31,7 +31,7 @@ export class LinesBlock {
     isParsed = false;
 
     constructor(fromLine: number, toLine: number, lines?: Line[]) {
-        this.index = Math.floor(fromLine / BLOCK_SIZE);
+        this.index = Math.floor(fromLine / LINES_BLOCK_SIZE);
         this.fromLine = fromLine;
         this.toLine = toLine;
         this.lines = lines ? LinesBlock.#compressLinesSync(lines) : Buffer.from('');
@@ -43,7 +43,7 @@ export class LinesBlock {
         this.ready = true;
     }
 
-    parseLines() {
+    parseLinesSync() {
         if(this.parsedLines) {
             return this.parsedLines;
         }
@@ -55,9 +55,9 @@ export class LinesBlock {
         return this.parsedLines;
     }
 
-    async parseLinesBackground() {
+    async parseLines() {
         if(this.parsedLines) {
-            return;
+            return this.parsedLines;
         }
 
         this.parsedLines = await LinesBlock.#decompressLines(this.lines);

@@ -19,7 +19,7 @@ export class ParsedFileState {
         ParsedFileState.#windowToParsedFileState.set(window, state);
     }
 
-    static abortParsing(window: BrowserWindow) {
+    static removeStateForWindow(window: BrowserWindow) {
         const state = ParsedFileState.#windowToParsedFileState.get(window);
 
         if (!state) {
@@ -50,7 +50,7 @@ export class ParsedFileState {
     }
 
     async addBlock(fromLine: number, block: Line[]) {
-        this.nextFromLine = Math.max(fromLine + block.length + 1, this.nextFromLine);
+        this.nextFromLine = Math.max(fromLine + block.length, this.nextFromLine);
         await this.#blockCoordinator.addBlock(fromLine, block);
     }
 
@@ -58,7 +58,11 @@ export class ParsedFileState {
         return this.nextFromLine;
     }
 
-    getLines(fromLine: number) {
+    getLinesSync(fromLine: number) {
+        return this.#blockCoordinator.getLinesForLineSync(fromLine);
+    }
+
+    getLines(fromLine: number): Promise<Line[]> {
         return this.#blockCoordinator.getLinesForLine(fromLine);
     }
 

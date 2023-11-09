@@ -7,6 +7,7 @@ import {FileParsedEvent, Line, OnFileSelectedCallback} from "./shared-types";
 contextBridge.exposeInMainWorld('electron', {
     // --- General ---
     getWindowId: () => ipcRenderer.sendSync('get-window-id'),
+    windowInitialized: () => ipcRenderer.sendSync('window-initialized'),
     onSoftRefresh: (cb: () => void) => ipcRenderer.on('soft-refresh', cb),
     offSoftRefresh: (cb: () => void) => ipcRenderer.off('soft-refresh', cb),
 
@@ -24,9 +25,9 @@ contextBridge.exposeInMainWorld('electron', {
     },
 
     // --- Read file related ---
-    getLines(fromLine: number): Line[] {
+    getLines(fromLine: number): Promise<Line[]> {
         // TODO - should we use invoke instead? so it will not block the main thread?
-        return ipcRenderer.sendSync('get-lines', fromLine);
+        return ipcRenderer.invoke('get-lines', fromLine);
     },
     // listenToFileChunks: (filePathToRead: string, cb: ListenToFileChunk) => ipcRenderer.on(`read-file-stream-${filePathToRead}`, cb),
     // cleanupFileChunkListener: (filePathToRead: string, cb: ListenToFileChunk) => ipcRenderer.off(`read-file-stream-${filePathToRead}`, cb),

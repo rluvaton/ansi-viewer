@@ -68,7 +68,7 @@ async function assertFileAccessible(filePath: string) {
 }
 
 ipcMain.handle('select-file', async (event) => {
-    return await openFile(getWindowFromEvent(event));
+    return await openFile(getWindowFromEvent(event), true);
 });
 
 // ipcMain.on('read-file-stream', async (event, filePath) => {
@@ -103,7 +103,7 @@ ipcMain.handle('select-file', async (event) => {
 // })
 
 
-export async function openFile(window: BrowserWindow) {
+export async function openFile(window: BrowserWindow, requestedFromClient: boolean) {
     const filePath = await selectFile();
 
     if (!filePath) {
@@ -123,14 +123,15 @@ export async function openFile(window: BrowserWindow) {
     window.webContents.send('file-parsed', {
         filePath,
         totalLines: parsed.totalLines,
-        firstLines: parsed.getLines(0),
+        firstLines: parsed.getLinesSync(0),
         globalStyle: parsed.commonStyle,
+        requestedFromClient,
     } satisfies FileParsedEvent);
 
     return filePath;
 }
 
-ipcMain.on('get-lines', (event, fromLineNumber) => {
+ipcMain.handle('get-lines', async (event, fromLineNumber) => {
     const window = getWindowFromEvent(event);
 
     const parsed = ParsedFileState.getOpenedFileState(window)
@@ -139,5 +140,5 @@ ipcMain.on('get-lines', (event, fromLineNumber) => {
         throw new Error('No file opened');
     }
 
-    event.returnValue = parsed.getLines(fromLineNumber);
+    return await parsed.getLines(fromLineNumber);
 })

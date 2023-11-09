@@ -1,4 +1,4 @@
-import {action, computed, makeObservable, observable} from "mobx";
+import {action, computed, makeObservable, observable, runInAction} from "mobx";
 
 export class CurrentInstanceStore {
     public _refreshKeyNumber = 0;
@@ -22,8 +22,10 @@ export class CurrentInstanceStore {
         }, {once: true});
 
         window.addEventListener("resize", () => {
-            this.windowInnerHeight = window.innerHeight;
-            this.windowInnerWidth = window.innerWidth;
+            runInAction(() => {
+                this.windowInnerHeight = window.innerHeight;
+                this.windowInnerWidth = window.innerWidth;
+            });
         }, {signal: cleanupSignal});
 
         this.#currentWindowId = window.electron.getWindowId();

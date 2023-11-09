@@ -1,5 +1,6 @@
 import {action, makeObservable, observable} from "mobx";
 import {FileParsedEvent, Line} from "../../shared-types";
+import {LinesStorage} from "../lines-storage";
 
 type CurrentFileState = 'idle' | 'reading' | 'read' | 'error';
 
@@ -8,8 +9,7 @@ export class CurrentFileStore {
     currentFileState: CurrentFileState = 'idle';
 
     commonStyleElement: HTMLStyleElement;
-    lines: Line[] = [];
-    linesLinkedList 
+    linesStorage: LinesStorage = new LinesStorage(10);
     totalLines = 0;
     linesRerenderKey = 0;
     currentLineNumber: number | undefined;
@@ -23,7 +23,6 @@ export class CurrentFileStore {
             linesRerenderKey: observable,
             reset: action,
             selectFile: action,
-            setLines: action,
             setAsReading: action,
             loadMoreLines: action,
         });
@@ -36,29 +35,30 @@ export class CurrentFileStore {
         this.resetAbortController = new AbortController();
         this.currentFileState = 'idle';
         this.fileContent = undefined;
-        this.lines = [];
+        this.linesStorage.reset();
     }
 
     selectFile(event: FileParsedEvent, resetBefore = false) {
         if (resetBefore) {
             this.reset();
+        } else {
+            this.linesStorage.reset();
         }
-        // this.currentFileState = 'reading';
 
-        this.lines = event.firstLines;
+        this.linesStorage.addLines(event.firstLines);
         this.totalLines = event.totalLines;
         this.currentFileState = 'read';
         this.linesRerenderKey++;
         this.commonStyleElement.innerHTML = event.globalStyle;
     }
 
-    reselectSameFile(filePath: string) {
-        const firstLines = window.electron.getLines(0);
+    async reselectSameFile(filePath: string) {
         this.selectFile({
-            firstLines,
             filePath,
+            firstLines: await window.electron.getLines(0),
             totalLines: this.totalLines,
             globalStyle: this.commonStyleElement.innerHTML,
+            requestedFromClient: true,
         }, true);
     }
 
@@ -176,24 +176,21 @@ export class CurrentFileStore {
 
     isLineNumberLoaded = (lineNumber: number) => {
         // TODO - implement by asking the backend if read that line synchronously
-        // TODO - should then cache the lines that are loaded and not ask again until reading new lines that are not part of the current view + buffer
-        return this.currentFileState === 'read' && this.lines[lineNumber] !== undefined;
+        return this.currentFileState === 'read' && (lineNumber < this.totalLines) && this.linesStorage.isLineExists(lineNumber);
     }
 
     loadMoreLines = async (startLineNumber: number, endLineNumber: number) => {
+        if(startLineNumber >= this.totalLines) {
+            return;
+        }
+
         // TODO - support endLineNumber
-        this.lines = window.electron.getLines(startLineNumber);
+        this.linesStorage.addLines(await window.electron.getLines(startLineNumber));
         this.currentLineNumber = startLineNumber;
-        // TODO - implement by asking the backend to read the lines and parse it here
     }
 
     // the generated class name is the one that in the common style, style element
     getLine(lineNumber: number): Line | undefined {
-        return this.lines[lineNumber];
-    }
-
-    setLines(lines: Line[]) {
-        this.lines = lines;
-        this.linesRerenderKey++;
+        return this.linesStorage.getLine(lineNumber);
     }
 }

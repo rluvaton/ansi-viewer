@@ -2,8 +2,8 @@ import fs from "node:fs/promises";
 import {parseIterator as parseAnsi} from "ansicolor";
 import {BrowserWindow} from "electron";
 import {Line} from "../../shared-types";
-import {BLOCK_SIZE} from "./lines-block-coordinator";
 import {ParsedFileState} from "./parsed-ansi-file";
+import {LINES_BLOCK_SIZE} from "../../shared/constants";
 
 export class OpenedFileState {
     static #windowToOpenedFileState = new WeakMap<BrowserWindow, OpenedFileState>();
@@ -30,7 +30,10 @@ export class OpenedFileState {
 
         const parsedFileState: ParsedFileState = await state.parseFile(filePath);
 
-        ParsedFileState.addNewState(window, parsedFileState);
+        if(!state.#parsingAbortController.signal.aborted) {
+            ParsedFileState.addNewState(window, parsedFileState);
+        }
+
         OpenedFileState.#windowToOpenedFileState.delete(window);
 
         return parsedFileState;
@@ -106,7 +109,12 @@ pre.${className} {
         }
 
         let i = 0;
-        let currentLine: Line = [];
+        let lineIndex = 0;
+
+        let currentLine: Line = {
+            lineIndex,
+            items: [],
+        };
 
         // TODO - use streams so we don't need to load the whole file into memory and to support large files above 1GB
         let fileContent = (await fs.readFile(filePath, {
@@ -120,6 +128,7 @@ pre.${className} {
             return tmp;
         });
 
+
         for (const span of spans) {
             if (signal.aborted) {
                 throw new Error('Aborted');
@@ -129,31 +138,39 @@ pre.${className} {
 
             const linesInSpan = span.text.split("\n");
             if (linesInSpan.length === 1) {
-                currentLine.push({
+                currentLine.items.push({
                     text: span.text,
                     className
                 });
             } else if (linesInSpan.length > 1) {
-                currentLine.push({
+                currentLine.items.push({
                     text: linesInSpan[0],
                     className
                 });
                 this.lines.push(currentLine);
+                lineIndex++;
 
                 // Without first and last lines so the first line can be combined with the last line of the previous span
                 // and the last line can be combined with the first line of the next span
-                for (let i = 1; i < linesInSpan.length - 1; i++) {
-                    this.lines.push([{
-                        text: linesInSpan[i],
-                        className
-                    }]);
+                for (let j = 1; j < linesInSpan.length - 1; j++) {
+                    this.lines.push({
+                        lineIndex: lineIndex,
+                        items: [{
+                            text: linesInSpan[i],
+                            className
+                        }]
+                    });
+                    lineIndex++;
                 }
 
-                currentLine = [];
+                currentLine = {
+                    lineIndex: lineIndex,
+                    items: [],
+                }
 
                 // If not empty
                 if (linesInSpan[linesInSpan.length - 1]) {
-                    currentLine.push({
+                    currentLine.items.push({
                         text: linesInSpan[linesInSpan.length - 1],
                         className
                     });
@@ -161,7 +178,7 @@ pre.${className} {
             }
             i++;
 
-            if(this.lines.length > BLOCK_SIZE) {
+            if(this.lines.length > LINES_BLOCK_SIZE) {
                 await this.addBlocks(parsedAnsiFile, false);
             }
         }
@@ -181,23 +198,23 @@ pre.${className} {
 
     async addBlocks(parsedAnsiFile: ParsedFileState, addLastBlock = false) {
         // Chunks should not include the last item
-        const chunks: Line[][] = new Array(Math.floor(this.lines.length / BLOCK_SIZE));
+        const chunks: Line[][] = new Array(Math.floor(this.lines.length / LINES_BLOCK_SIZE));
         let chunkIndex = 0;
 
-        for (let i = 0; i < this.lines.length; i += BLOCK_SIZE) {
+        for (let i = 0; i < this.lines.length; i += LINES_BLOCK_SIZE) {
             // Last item still need more data
-            if(!addLastBlock && this.lines.length - i < BLOCK_SIZE) {
+            if(!addLastBlock && this.lines.length - i < LINES_BLOCK_SIZE) {
                 this.lines = this.lines.slice(i);
                 break;
             }
 
-            chunks[chunkIndex] = this.lines.slice(i, i + BLOCK_SIZE);
+            chunks[chunkIndex] = this.lines.slice(i, i + LINES_BLOCK_SIZE);
             chunkIndex++;
         }
 
         const currentFromLine = parsedAnsiFile.nextFromLine;
         await Promise.all(
-            chunks.map((chunk, index) => parsedAnsiFile.addBlock(currentFromLine + index * BLOCK_SIZE, chunk))
+            chunks.map((chunk, index) => parsedAnsiFile.addBlock(currentFromLine + index * LINES_BLOCK_SIZE, chunk))
         )
     }
 

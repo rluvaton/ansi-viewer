@@ -5,6 +5,9 @@ import {setupMainMenu} from "./menu";
 
 // Setup
 import './file-handling';
+import {OpenedFileState} from "./ansi-file/open-file-state";
+import {getWindowFromEvent} from "./helper";
+import {ParsedFileState} from "./ansi-file/parsed-ansi-file";
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -63,4 +66,13 @@ app.on('activate', () => {
 
 ipcMain.on('get-window-id', (event) => {
     event.returnValue = event.sender.id;
+})
+
+ipcMain.on('window-initialized', (event) => {
+    const window = getWindowFromEvent(event);
+    process.nextTick(() => {
+        OpenedFileState.abortParsing(window);
+        ParsedFileState.removeStateForWindow(window);
+    });
+    event.returnValue = undefined;
 })

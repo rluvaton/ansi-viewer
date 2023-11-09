@@ -13,6 +13,7 @@ declare global {
             selectFile(): Promise<string>,
 
             onFileSelected(cb: OnFileSelectedCallback): void,
+            windowInitialized(): void,
             offFileSelected(cb: OnFileSelectedCallback): void,
             waitForNewFile(): Promise<FileParsedEvent | undefined>,
 
@@ -20,7 +21,7 @@ declare global {
             listenToFileChunks(filePathToRead: string, cb: ListenToFileChunk): void,
             cleanupFileChunkListener(filePathToRead: string, cb: ListenToFileChunk): void,
             startReadingFile(filePathToRead: string): void,
-            getLines(fromLine: number): Line[],
+            getLines(fromLine: number): Promise<Line[]>,
         },
     }
 }

@@ -40,7 +40,7 @@ export class FileSelectorStore {
                 break;
             case 'selected':
                 if (this.currentFilePath) {
-                    currentFileStore.reselectSameFile(this.currentFilePath);
+                    await currentFileStore.reselectSameFile(this.currentFilePath);
                 } else {
                     this.fileSelectingState = 'idle';
                 }

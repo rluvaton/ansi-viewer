@@ -1,21 +1,21 @@
 import React from 'react'
-import {observer} from "mobx-react-lite";
-import {getContainer} from "../../stores/stores-container";
-
+import {Observer, observer} from "mobx-react-lite";
 import InfiniteLoader from 'react-window-infinite-loader';
-
 import {FixedSizeList, ListChildComponentProps} from "react-window";
+
+import {getContainer} from "../../stores/stores-container";
+import {LINES_BLOCK_SIZE} from "../../../shared/constants";
 
 import s from './index.module.css';
 
 function LargeAnsiFileViewerComp() {
     const {currentFileStore, currentInstanceStore} = getContainer();
 
-    if(currentFileStore.currentFileState === 'error') {
+    if (currentFileStore.currentFileState === 'error') {
         return <div>Error</div>
     }
 
-    if(currentFileStore.currentFileState === 'reading') {
+    if (currentFileStore.currentFileState === 'reading') {
         return <div>Loading...</div>
     }
 
@@ -29,30 +29,35 @@ function LargeAnsiFileViewerComp() {
             isItemLoaded={currentFileStore.isLineNumberLoaded}
             itemCount={numberOfLines}
             loadMoreItems={currentFileStore.loadMoreLines}
+            minimumBatchSize={LINES_BLOCK_SIZE}
         >
-            {({onItemsRendered, ref,}) => (
+            {({onItemsRendered, ref}) =>
+                (
+                    <Observer>
+                        {() => (
 
-                // TODO - should not be fixed
-                <FixedSizeList
-                    key={currentFileStore.linesRerenderKey}
+                            // TODO - should not be fixed
+                            <FixedSizeList
+                                key={currentFileStore.linesRerenderKey}
+                                className={s.ansiContainer}
 
-                    // Should this be the current displayed lines?
-                    itemCount={numberOfLines}
-                    onItemsRendered={onItemsRendered}
-                    ref={ref}
+                                itemCount={numberOfLines}
+                                onItemsRendered={onItemsRendered}
+                                ref={ref}
 
-                    // TODO - make sure it's cached
-                    height={currentInstanceStore.windowInnerHeight}
-                    width="100%"
+                                height={currentInstanceStore.windowInnerHeight}
+                                width="100%"
 
-                    // this is the line height
-                    // TODO - change to the actual line height by calculating it
-                    itemSize={22}
-                    className={s.ansiContainer}
-                >
-                    {LineCode}
-                </FixedSizeList>
-            )}
+                                // this is the line height
+                                // TODO - change to the actual line height by calculating it
+                                itemSize={22}
+                            >
+                                {LineCode}
+                            </FixedSizeList>
+
+                        )}
+                    </Observer>
+                )}
         </InfiniteLoader>
     )
 }
@@ -62,12 +67,18 @@ function LineCode({index, style}: ListChildComponentProps) {
 
     // TODO - render line, this should already be in the store parsed
     if (!currentFileStore.isLineNumberLoaded(index)) {
-        return <span>'Loading..'</span>;
+        return null;
     }
 
     const lineContent = currentFileStore.getLine(index);
 
-    return <div key={index} style={style}>{lineContent.map((item, lineItemIndex) => <pre key={lineItemIndex} className={item.className}>{item.text}</pre>)}</div>
+    return (
+        <div key={index} style={style}>{
+            lineContent.items.map((item, lineItemIndex) =>
+                <pre key={lineItemIndex} className={item.className}>{item.text}</pre>
+            )}
+        </div>
+    )
 }
 
 

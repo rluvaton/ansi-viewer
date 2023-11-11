@@ -2,11 +2,12 @@ body {
     margin: 0;
 }
 
-.line-number {
-    text-align: right;
-    margin-right: 10px;
-    margin-left: 10px;
-    color: #999;
-    font-size: 12px;
-    font-family: monospace;
+.noselect {
+    -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+    -khtml-user-select: none; /* Konqueror HTML */
+    -moz-user-select: none; /* Old versions of Firefox */
+    -ms-user-select: none; /* Internet Explorer/Edge */
+    user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome, Edge, Opera and Firefox */
 }

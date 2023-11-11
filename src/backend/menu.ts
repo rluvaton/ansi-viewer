@@ -8,6 +8,12 @@ export function setupMainMenu() {
         {
             label: 'Menu',
             submenu: [
+                {role: 'about'},
+                {type: 'separator'},
+                {role: 'hide'},
+                {role: 'hideOthers'},
+                {role: 'unhide'},
+                {type: 'separator'},
                 {
                     label: 'Refresh',
                     accelerator: 'CmdOrCtrl+R',
@@ -22,6 +28,7 @@ export function setupMainMenu() {
                         browser.reload();
                     }
                 },
+                {type: 'separator'},
                 {
                     label: 'Close',
                     accelerator: 'CmdOrCtrl+W',
@@ -34,13 +41,20 @@ export function setupMainMenu() {
                         }
                     }
                 },
-                {
-                    label: 'Exit',
-                    accelerator: 'CmdOrCtrl+Q',
-                    click() {
-                        app.quit()
-                    }
-                }
+                {role: 'quit'},
+            ]
+        },
+        {
+            label: 'Edit',
+            submenu: [
+                {role: 'undo'},
+                {role: 'redo'},
+                {type: 'separator'},
+                {role: 'cut'},
+                {role: 'copy'},
+                {role: 'paste'},
+                {role: 'delete'},
+                {role: 'selectAll'}
             ]
         },
         {
@@ -57,6 +71,16 @@ export function setupMainMenu() {
                         await openFile(browser, false);
                     }
                 }
+            ]
+        },
+        {
+            role: 'window',
+            submenu: [
+                {role: 'close'},
+                {role: 'minimize'},
+                {role: 'zoom'},
+                {type: 'separator'},
+                {role: 'front'},
             ]
         },
     ]);

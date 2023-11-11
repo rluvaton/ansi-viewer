@@ -218,6 +218,6 @@ pre.${className} {
 
 
 function buildHtmlForItems(lineIndex: number, items: LineItem[]): Line {
-    return {lineIndex, __html: `<code class="line-number">${lineIndex + 1}</code>${items.map((item) => `<pre ${item.className ? `class="${item.className}"` : ''}>${item.text}</pre>`).join('')}`}
+    return {lineIndex, __html: `<code class="line-number noselect">${lineIndex + 1}</code>${items.map((item) => `<pre ${item.className ? `class="${item.className}"` : ''}>${item.text}</pre>`).join('')}`}
 }
 

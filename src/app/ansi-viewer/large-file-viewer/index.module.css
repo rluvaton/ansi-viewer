@@ -1,19 +1,19 @@
-/* The div below is the container for the virtual list */
-.ansiContainer > div {
-    /*TODO - check this, with this actual scroll not working */
-    /*display: inline;*/
-}
-
 .ansiContainer pre {
     display: inline;
     margin: 0;
 }
 
-.lineNumber {
-    text-align: right;
-    margin-right: 10px;
-    margin-left: 10px;
-    color: #999;
-    font-size: 12px;
-    font-family: monospace;
+.ansiContainer :global(.line-number) {
+        text-align: right;
+        margin-right: 10px;
+        margin-left: 10px;
+        color: #999;
+        font-size: 12px;
+        font-family: monospace;
+}
+
+/* nowrap exists, even though WebStorm says it doesn't: https://developer.mozilla.org/en-US/docs/Web/CSS/text-wrap#nowrap '*/
+/*noinspection ALL*/
+.ansiContainer .line {
+    text-wrap: nowrap;
 }

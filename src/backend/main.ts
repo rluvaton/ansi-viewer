@@ -31,7 +31,7 @@ const createWindow = () => {
     });
 
     // Open the DevTools.
-    mainWindow.webContents.openDevTools();
+    // mainWindow.webContents.openDevTools();
 
     // and load the index.html of the app.
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
@@ -93,3 +93,15 @@ ipcMain.on('window-initialized', (event) => {
 //         await new Promise(resolve => setTimeout(resolve, 1000));
 //     }
 // })
+
+function printMemory(msg?: string) {
+    const parsedMemUsage =  Object.fromEntries(
+            Object.entries(process.memoryUsage())
+                .map(([key, value]) => [key, prettyBytes(value)])
+        );
+
+        console.log(
+            `[${process.pid}] Memory usage (${msg ?? ''})`,
+            parsedMemUsage
+        );
+}

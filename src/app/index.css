@@ -1,6 +1,15 @@
 body {
     margin: 0;
+
+    /*background-color: white;*/
+    /*color: black;*/
 }
+/*@media screen and (prefers-color-scheme: dark) {*/
+/*    body {*/
+/*        background-color: black;*/
+/*        color: white;*/
+/*    }*/
+/*}*/
 
 .noselect {
     -webkit-touch-callout: none; /* iOS Safari */

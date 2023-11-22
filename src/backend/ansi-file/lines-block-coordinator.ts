@@ -90,11 +90,11 @@ export class LinesBlockCoordinator {
 
         // if the line is in the first block than load the next 2 blocks
         if (blockIndex === 0) {
-            blockIndexesToGetReady =  Array.from({length: 9}, (_, i) => i + 1);
+            blockIndexesToGetReady =  [blockIndex + 1, blockIndex + 2]
         } else if (blockIndex === this.#linesBlocks.length - 1) {
-            blockIndexesToGetReady = Array.from({length: 9}, (_, i) => blockIndex - i - 1);
+            blockIndexesToGetReady = [blockIndex - 1, blockIndex - 2];
         } else {
-            blockIndexesToGetReady = [blockIndex - 2, blockIndex - 1, ...Array.from({length: 7}, (_, i) => blockIndex + i + 1)];
+            blockIndexesToGetReady = [blockIndex - 1, blockIndex + 1];
         }
 
         blockIndexesToGetReady = blockIndexesToGetReady.filter(index =>

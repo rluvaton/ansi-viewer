@@ -8,12 +8,12 @@ import './file-handling';
 import {OpenedFileState} from "./ansi-file/open-file-state";
 import {getWindowFromEvent} from "./helper";
 import {ParsedFileState} from "./ansi-file/parsed-ansi-file";
+import prettyBytes from "pretty-bytes";
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
     app.quit();
 }
-
 
 
 let mainWindow: BrowserWindow;
@@ -76,3 +76,20 @@ ipcMain.on('window-initialized', (event) => {
     });
     event.returnValue = undefined;
 })
+//
+// ipcMain.on('register', async (event) => {
+//     while (true) {
+//         const parsedMemUsage =  Object.fromEntries(
+//             Object.entries(process.memoryUsage())
+//                 .map(([key, value]) => [key, prettyBytes(value)])
+//         );
+//
+//         console.log(
+//             `[${process.pid}] Memory usage`,
+//             parsedMemUsage
+//         );
+//         event.sender.send('memory-usage', `[${process.pid}] Memory usage`, parsedMemUsage);
+//
+//         await new Promise(resolve => setTimeout(resolve, 1000));
+//     }
+// })

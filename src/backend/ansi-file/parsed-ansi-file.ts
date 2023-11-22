@@ -50,8 +50,9 @@ export class ParsedFileState {
     }
 
     async addBlock(fromLine: number, block: Line[]) {
-        this.nextFromLine = Math.max(fromLine + block.length, this.nextFromLine);
-        await this.#blockCoordinator.addBlock(fromLine, block);
+        const from = this.nextFromLine;
+        this.nextFromLine = from + block.length;
+        await this.#blockCoordinator.addBlock(from, block);
     }
 
     get totalLines() {

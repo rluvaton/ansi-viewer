@@ -29,6 +29,18 @@ contextBridge.exposeInMainWorld('electron', {
         // TODO - should we use invoke instead? so it will not block the main thread?
         return ipcRenderer.invoke('get-lines', fromLine);
     },
+
+
+    register() {
+        ipcRenderer.send('register');
+    },
+
+    memoryUsage(cb: (event: unknown, message: string, obj: unknown) => void) {
+        ipcRenderer.on('memory-usage', cb);
+    },
+    offMemoryUsage(cb: (event: unknown, message: string, obj: unknown) => void) {
+        ipcRenderer.off('memory-usage', cb);
+    },
     // listenToFileChunks: (filePathToRead: string, cb: ListenToFileChunk) => ipcRenderer.on(`read-file-stream-${filePathToRead}`, cb),
     // cleanupFileChunkListener: (filePathToRead: string, cb: ListenToFileChunk) => ipcRenderer.off(`read-file-stream-${filePathToRead}`, cb),
     // startReadingFile: (filePathToRead: string) => ipcRenderer.send('read-file-stream', filePathToRead),

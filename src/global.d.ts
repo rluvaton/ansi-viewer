@@ -22,6 +22,11 @@ declare global {
             cleanupFileChunkListener(filePathToRead: string, cb: ListenToFileChunk): void,
             startReadingFile(filePathToRead: string): void,
             getLines(fromLine: number): Promise<Line[]>,
-        },
+
+
+            register(): void;
+            memoryUsage(cb: (event: unknown, message: string, obj: unknown) => void): void;
+            offMemoryUsage(cb: (event: unknown, message: string, obj: unknown) => void): void;
+        }
     }
 }

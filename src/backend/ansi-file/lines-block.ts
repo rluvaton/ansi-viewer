@@ -55,12 +55,12 @@ export class LinesBlock {
         return this.parsedLines;
     }
 
-    async parseLines() {
+    async parseLines(signal?: AbortSignal) {
         if(this.parsedLines) {
             return this.parsedLines;
         }
 
-        this.parsedLines = await LinesBlock.#decompressLines(this.lines);
+        this.parsedLines = await LinesBlock.#decompressLines(this.lines, signal);
 
         this.isParsed = true;
         return this.parsedLines;
@@ -88,8 +88,9 @@ export class LinesBlock {
         return JSON.parse(zlib.unzipSync(compressedLines).toString());
     }
 
-    static async #decompressLines(compressedLines: Buffer): Promise<Line[]> {
-        // TODO - allow to abort
-        return JSON.parse((await unzip(compressedLines)).toString());
+    static async #decompressLines(compressedLines: Buffer, signal?: AbortSignal): Promise<Line[]> {
+        return JSON.parse((await unzip(compressedLines,  {
+            signal
+        })).toString());
     }
 }

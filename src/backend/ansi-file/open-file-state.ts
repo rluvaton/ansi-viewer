@@ -1,5 +1,5 @@
-import fs from "node:fs/promises";
-import {parseIterator as parseAnsi} from "ansicolor";
+import {createReadStream} from "node:fs";
+import {Span, parseAnsiTransformer, rawParse, parseAnsiFromRawSpans} from "./ansi-parser";
 import {BrowserWindow} from "electron";
 import {Line, LineItem} from "../../shared-types";
 import {ParsedFileState} from "./parsed-ansi-file";
@@ -12,7 +12,6 @@ export class OpenedFileState {
     #idCounter = 0;
     #commonClassesMap = new Map<string, string>();
     commonStyle = '';
-    lines: Line[] = [];
 
     constructor() {
         this.#setupParsingAbortController();
@@ -30,7 +29,7 @@ export class OpenedFileState {
 
         const parsedFileState: ParsedFileState = await state.parseFile(filePath);
 
-        if(!state.#parsingAbortController.signal.aborted) {
+        if (!state.#parsingAbortController.signal.aborted) {
             ParsedFileState.addNewState(window, parsedFileState);
         }
 
@@ -62,7 +61,6 @@ export class OpenedFileState {
         this.#idCounter = 0;
         this.#commonClassesMap.clear();
         this.commonStyle = '';
-        this.lines = [];
     }
 
     abort() {
@@ -110,114 +108,113 @@ pre.${className} {
 
         let lineIndex = 0;
 
-        let currentLine: {lineIndex: number, items: LineItem[]} = {
-            lineIndex,
-            items: [],
-        };
-
-        // TODO - use streams so we don't need to load the whole file into memory and to support large files above 1GB
-        let fileContent = (await fs.readFile(filePath, {
-            signal
-        })).toString();
-
-        const spans = parseAnsi(() => {
-            // Doing this so fileContent can be GCed after first access
-            const tmp = fileContent;
-            fileContent = '';
-            return tmp;
+        const fileStream = createReadStream(filePath, {
+            signal,
+            highWaterMark: 1048576 // 1MB
         });
 
+        const createClassNameForCSS = this.#createClassNameForCSS.bind(this);
 
-        for (const span of spans) {
-            if (signal.aborted) {
-                throw new Error('Aborted');
-            }
-
-            const className = this.#createClassNameForCSS(span.css);
-
-            const linesInSpan = span.text.split("\n");
-            if (linesInSpan.length === 1) {
-                currentLine.items.push({
-                    text: span.text,
-                    className
-                });
-            } else if (linesInSpan.length > 1) {
-                currentLine.items.push({
-                    text: linesInSpan[0],
-                    className
-                });
-                this.lines.push(buildHtmlForItems(currentLine.lineIndex, currentLine.items));
-                lineIndex++;
-
-                // Without first and last lines so the first line can be combined with the last line of the previous span
-                // and the last line can be combined with the first line of the next span
-                for (let j = 1; j < linesInSpan.length - 1; j++) {
-                    const newLine = [{
-                        text: linesInSpan[j],
-                        className
-                    }];
-                    this.lines.push(buildHtmlForItems(lineIndex, newLine));
-                    lineIndex++;
-                }
-
-                currentLine = {
-                    lineIndex: lineIndex,
+        await fileStream
+            .compose(rawParse)
+            // @ts-expect-error TODO: fix types
+            .compose(parseAnsiFromRawSpans)
+            .compose(async function* (stream: AsyncIterable<Span>) {
+                let currentLine: { lineIndex: number, items: LineItem[] } = {
+                    lineIndex,
                     items: [],
+                };
+
+                for await (const span of stream) {
+                    const className = createClassNameForCSS(span.css);
+
+                    const linesInSpan = span.text.split("\n");
+                    if (linesInSpan.length === 1) {
+                        currentLine.items.push({
+                            text: span.text,
+                            className
+                        });
+                    } else if (linesInSpan.length > 1) {
+                        currentLine.items.push({
+                            text: linesInSpan[0],
+                            className
+                        });
+                        yield buildHtmlForItems(currentLine.lineIndex, currentLine.items)
+                        lineIndex++;
+
+                        // Without first and last lines so the first line can be combined with the last line of the previous span
+                        // and the last line can be combined with the first line of the next span
+                        for (let j = 1; j < linesInSpan.length - 1; j++) {
+                            const newLine = [{
+                                text: linesInSpan[j],
+                                className
+                            }];
+                            yield buildHtmlForItems(lineIndex, newLine);
+                            lineIndex++;
+                        }
+
+                        currentLine = {
+                            lineIndex: lineIndex,
+                            items: [],
+                        }
+
+                        // If not empty
+                        if (linesInSpan[linesInSpan.length - 1]) {
+                            currentLine.items.push({
+                                text: linesInSpan[linesInSpan.length - 1],
+                                className
+                            });
+                        }
+                    }
                 }
 
-                // If not empty
-                if (linesInSpan[linesInSpan.length - 1]) {
-                    currentLine.items.push({
-                        text: linesInSpan[linesInSpan.length - 1],
-                        className
-                    });
+                if (currentLine) {
+                    yield buildHtmlForItems(currentLine.lineIndex, currentLine.items);
                 }
-            }
+            })
+            .compose(async function* (lines: AsyncIterable<Line>) {
+                let block: Line[] = new Array(LINES_BLOCK_SIZE);
+                let i = 0;
+                let empty = true;
 
-            if(this.lines.length > LINES_BLOCK_SIZE) {
-                await this.addBlocks(parsedAnsiFile, false);
-            }
-        }
+                for await (const line of lines) {
+                    empty = false;
+                    block[i++] = line;
 
-        if (currentLine) {
-            this.lines.push(buildHtmlForItems(currentLine.lineIndex, currentLine.items));
-        }
+                    if (i === LINES_BLOCK_SIZE) {
+                        yield {
+                            fromLine: parsedAnsiFile.nextFromLine + LINES_BLOCK_SIZE,
+                            block
+                        }
+                        block = new Array(LINES_BLOCK_SIZE);
+                        i = 0;
+                        empty = true;
+                    }
+                }
 
-        if(this.lines.length) {
-            await this.addBlocks(parsedAnsiFile, true);
-        }
+                if (!empty) {
+                    yield {
+                        fromLine: parsedAnsiFile.nextFromLine + LINES_BLOCK_SIZE,
+                        block: block.slice(0, i)
+                    }
+                }
+            })
+            .forEach(async ({fromLine, block}: { fromLine: number, block: Line[] }) => {
+                await parsedAnsiFile.addBlock(fromLine, block)
+            });
+
 
         parsedAnsiFile.commonStyle = this.commonStyle;
 
         return parsedAnsiFile;
     }
-
-    async addBlocks(parsedAnsiFile: ParsedFileState, addLastBlock = false) {
-        // Chunks should not include the last item
-        const chunks: Line[][] = new Array(Math.floor(this.lines.length / LINES_BLOCK_SIZE));
-        let chunkIndex = 0;
-
-        for (let i = 0; i < this.lines.length; i += LINES_BLOCK_SIZE) {
-            // Last item still need more data
-            if(!addLastBlock && this.lines.length - i < LINES_BLOCK_SIZE) {
-                this.lines = this.lines.slice(i);
-                break;
-            }
-
-            chunks[chunkIndex] = this.lines.slice(i, i + LINES_BLOCK_SIZE);
-            chunkIndex++;
-        }
-
-        const currentFromLine = parsedAnsiFile.nextFromLine;
-        await Promise.all(
-            chunks.map((chunk, index) => parsedAnsiFile.addBlock(currentFromLine + index * LINES_BLOCK_SIZE, chunk))
-        )
-    }
-
 }
 
 
 function buildHtmlForItems(lineIndex: number, items: LineItem[]): Line {
-    return {lineIndex, __html: `<code class="line-number noselect">${lineIndex + 1}</code>${items.map((item) => `<pre ${item.className ? `class="${item.className}"` : ''}>${item.text}</pre>`).join('')}`}
+    return {
+        lineIndex,
+        __html: `<code class="line-number noselect">${lineIndex + 1}</code>${items.map((item) => `<pre ${item.className ? `class="${item.className}"` : ''}>${item.text}</pre>`).join('')}`
+    }
 }
 

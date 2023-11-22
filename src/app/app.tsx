@@ -4,6 +4,7 @@ import {AnsiViewerPage} from "./ansi-viewer/page";
 import {getContainer} from "./stores/stores-container";
 import {observer} from "mobx-react-lite";
 import {FileParsedEvent} from "../shared-types";
+import {ipcRenderer} from "electron";
 
 function App() {
     const {fileSelectorStore, currentFileStore, currentInstanceStore} = getContainer();
@@ -20,7 +21,19 @@ function App() {
 
         window.electron.windowInitialized();
 
-        return () => window.electron.offFileSelected(onFileSelected);
+
+        // function logMem(_, ...args: any[]) {
+        //     console.log(...args);
+        // }
+        //
+        // window.electron.memoryUsage(logMem);
+        // window.electron.register();
+
+        return () => {
+            window.electron.offFileSelected(onFileSelected);
+            // window.electron.offMemoryUsage(logMem);
+
+        };
     }, []);
 
     if (fileSelectorStore.fileSelectingState === 'idle' || currentFileStore.currentFileState === 'idle') {

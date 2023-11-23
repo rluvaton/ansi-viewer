@@ -1,9 +1,10 @@
 import {createReadStream} from "node:fs";
-import {Span, parseAnsiTransformer, rawParse, parseAnsiFromRawSpans} from "./ansi-parser";
+import {parseAnsiFromRawSpans, rawParse, Span} from "./ansi-parser";
 import {BrowserWindow} from "electron";
 import {Line, LineItem} from "../../shared-types";
 import {ParsedFileState} from "./parsed-ansi-file";
 import {LINES_BLOCK_SIZE} from "../../shared/constants";
+import * as path from "node:path";
 
 export class OpenedFileState {
     static #windowToOpenedFileState = new WeakMap<BrowserWindow, OpenedFileState>();
@@ -100,113 +101,198 @@ pre.${className} {
     async parseFile(filePath: string) {
         const parsedAnsiFile = new ParsedFileState();
 
-        const signal = this.#parsingAbortController.signal;
+        parsedAnsiFile.totalLines = await this.computeTotalLines(filePath);
 
+        await this.#parseAnsiFile(parsedAnsiFile, filePath, true);
+
+        // This can happen if the file is bigger than the intro blocks
+        if (parsedAnsiFile.shouldCreateFull()) {
+            setTimeout(async () => {
+                if (this.#parsingAbortController.signal.aborted) {
+                    return;
+                }
+                try {
+                    await this.#parseAnsiFile(parsedAnsiFile, filePath, false);
+                } catch (e) {
+                    console.error('failed parsing file', e)
+                }
+            }, 0);
+        }
+
+        return parsedAnsiFile;
+    }
+
+    async #parseAnsiFile(parsedAnsiFile: ParsedFileState, filePath: string, createIntro: boolean) {
+        const signal = this.#parsingAbortController.signal;
         if (signal.aborted) {
             throw new Error('Aborted');
         }
 
+        console.time(`parseAnsiFile ${path.basename(filePath)} ${createIntro ? 'intro' : 'full'}`);
+
+        const exitEarlyAC = new AbortController();
+
         let lineIndex = 0;
 
+        // Cleanup the listeners when other one is called
+        const combinedAC = new AbortController();
+
+        signal.addEventListener('abort', () => {
+            combinedAC.abort();
+        }, {once: true});
+
+        exitEarlyAC.signal.addEventListener('abort', () => {
+            combinedAC.abort();
+        }, {once: true});
+
         const fileStream = createReadStream(filePath, {
-            signal,
+            signal: combinedAC.signal,
             highWaterMark: 1048576 // 1MB
         });
 
+        let blocksLoaded = 0;
+
         const createClassNameForCSS = this.#createClassNameForCSS.bind(this);
 
-        await fileStream
-            .compose(rawParse)
-            // @ts-expect-error TODO: fix types
-            .compose(parseAnsiFromRawSpans)
-            .compose(async function* (stream: AsyncIterable<Span>) {
-                let currentLine: { lineIndex: number, items: LineItem[] } = {
-                    lineIndex,
-                    items: [],
-                };
+        const exitEarlySignal = Symbol('exitEarlySignal');
 
-                for await (const span of stream) {
-                    const className = createClassNameForCSS(span.css);
+        try {
+            await fileStream
+                .compose(rawParse, {signal: combinedAC.signal})
+                // @ts-expect-error TODO: fix types
+                .compose(parseAnsiFromRawSpans, {signal: combinedAC.signal})
+                .compose(async function* (stream: AsyncIterable<Span>) {
+                    let currentLine: { lineIndex: number, items: LineItem[] } = {
+                        lineIndex,
+                        items: [],
+                    };
 
-                    const linesInSpan = span.text.split("\n");
-                    if (linesInSpan.length === 1) {
-                        currentLine.items.push({
-                            text: span.text,
-                            className
-                        });
-                    } else if (linesInSpan.length > 1) {
-                        currentLine.items.push({
-                            text: linesInSpan[0],
-                            className
-                        });
-                        yield buildHtmlForItems(currentLine.lineIndex, currentLine.items)
-                        lineIndex++;
+                    for await (const span of stream) {
+                        const className = createClassNameForCSS(span.css);
 
-                        // Without first and last lines so the first line can be combined with the last line of the previous span
-                        // and the last line can be combined with the first line of the next span
-                        for (let j = 1; j < linesInSpan.length - 1; j++) {
-                            const newLine = [{
-                                text: linesInSpan[j],
-                                className
-                            }];
-                            yield buildHtmlForItems(lineIndex, newLine);
-                            lineIndex++;
-                        }
-
-                        currentLine = {
-                            lineIndex: lineIndex,
-                            items: [],
-                        }
-
-                        // If not empty
-                        if (linesInSpan[linesInSpan.length - 1]) {
+                        const linesInSpan = span.text.split("\n");
+                        if (linesInSpan.length === 1) {
                             currentLine.items.push({
-                                text: linesInSpan[linesInSpan.length - 1],
+                                text: span.text,
                                 className
                             });
+                        } else if (linesInSpan.length > 1) {
+                            currentLine.items.push({
+                                text: linesInSpan[0],
+                                className
+                            });
+                            yield buildHtmlForItems(currentLine.lineIndex, currentLine.items)
+                            lineIndex++;
+
+                            // Without first and last lines so the first line can be combined with the last line of the previous span
+                            // and the last line can be combined with the first line of the next span
+                            for (let j = 1; j < linesInSpan.length - 1; j++) {
+                                const newLine = [{
+                                    text: linesInSpan[j],
+                                    className
+                                }];
+                                yield buildHtmlForItems(lineIndex, newLine);
+                                lineIndex++;
+                            }
+
+                            currentLine = {
+                                lineIndex: lineIndex,
+                                items: [],
+                            }
+
+                            // If not empty
+                            if (linesInSpan[linesInSpan.length - 1]) {
+                                currentLine.items.push({
+                                    text: linesInSpan[linesInSpan.length - 1],
+                                    className
+                                });
+                            }
                         }
                     }
-                }
 
-                if (currentLine) {
-                    yield buildHtmlForItems(currentLine.lineIndex, currentLine.items);
-                }
-            })
-            .compose(async function* (lines: AsyncIterable<Line>) {
-                let block: Line[] = new Array(LINES_BLOCK_SIZE);
-                let i = 0;
-                let empty = true;
+                    if (currentLine) {
+                        yield buildHtmlForItems(currentLine.lineIndex, currentLine.items);
+                    }
+                }, {signal: combinedAC.signal})
+                .compose(async function* (lines: AsyncIterable<Line>) {
+                    let block: Line[] = new Array(LINES_BLOCK_SIZE);
+                    let i = 0;
+                    let empty = true;
 
-                for await (const line of lines) {
-                    empty = false;
-                    block[i++] = line;
+                    for await (const line of lines) {
+                        empty = false;
+                        block[i++] = line;
 
-                    if (i === LINES_BLOCK_SIZE) {
-                        yield {
-                            fromLine: parsedAnsiFile.nextFromLine + LINES_BLOCK_SIZE,
-                            block
+                        if (i === LINES_BLOCK_SIZE) {
+                            yield block
+                            block = new Array(LINES_BLOCK_SIZE);
+                            i = 0;
+                            empty = true;
                         }
-                        block = new Array(LINES_BLOCK_SIZE);
-                        i = 0;
-                        empty = true;
                     }
-                }
 
-                if (!empty) {
-                    yield {
-                        fromLine: parsedAnsiFile.nextFromLine + LINES_BLOCK_SIZE,
-                        block: block.slice(0, i)
+                    if (!empty) {
+                        yield block.slice(0, i);
                     }
-                }
-            })
-            .forEach(async ({fromLine, block}: { fromLine: number, block: Line[] }) => {
-                await parsedAnsiFile.addBlock(fromLine, block)
-            });
+                }, {signal: combinedAC.signal})
+                .forEach(async (block: Line[]) => {
+                    await parsedAnsiFile.addBlock(block, createIntro);
 
+                    if (createIntro) {
+                        blocksLoaded++;
+                        if (blocksLoaded >= 10) {
+                            exitEarlyAC.abort(exitEarlySignal);
+                        }
+                    }
+                }, {signal: combinedAC.signal});
+        } catch (e) {
+            // If not aborted by early exit
+            if (e.code !== 'ABORT_ERR' || exitEarlyAC.signal.reason !== exitEarlySignal) {
+                console.error('Fail to read file', e);
+                throw e;
+            }
+        }
+
+        if (!createIntro) {
+            parsedAnsiFile.markAsReady();
+        } else if (!exitEarlyAC.signal.aborted) {
+            console.log('File is small enough to be loaded in one go, marking intro as full');
+            // If the file is small and we didn't abort it early
+            parsedAnsiFile.markIntroAsFull();
+        }
 
         parsedAnsiFile.commonStyle = this.commonStyle;
 
+        console.timeEnd(`parseAnsiFile ${path.basename(filePath)} ${createIntro ? 'intro' : 'full'}`);
         return parsedAnsiFile;
+    }
+
+    async computeTotalLines(filePath: string) {
+        console.time(`computeTotalLines ${path.basename(filePath)}`)
+        const numberOfLines = await createReadStream(filePath).reduce((totalLines, chunk) =>
+                totalLines +
+                // -1 because we only wanna count the number of new lines
+                chunk.toString().split('\n').length - 1,
+            0, {
+                signal: this.#parsingAbortController.signal
+            }
+        );
+        console.timeEnd(`computeTotalLines ${path.basename(filePath)}`);
+
+        return numberOfLines;
+    }
+
+    async fastWay() {
+        // TODO
+        // 1. Have predefined styles (as there are not that many - when using basic ansi) and use them OR just use inline styles
+        // 2. Get total line numbers of the file
+        // 3. Read the first 10 blocks so the user can see it fast
+        // 4. In the background create a map for:
+        //    - start block line number -> offset in the file
+        //    - start block line number -> which color it has at the beginning (like from previous line)
+        // 5. When the user scrolls to a line that is not in the first 10 blocks:
+        //    - read from the file the block that contains the line
+        //    - in the background read the next one and prev one block so it will be ready when the user scrolls to it
     }
 }
 

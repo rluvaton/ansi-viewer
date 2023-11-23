@@ -8,8 +8,15 @@ export class ParsedFileState {
 
     #closeFileAbortController: AbortController;
     commonStyle = '';
+
+    #introBlockCoordinator: LinesBlockCoordinator = new LinesBlockCoordinator();
+    introNextFromLine = 0;
+
     #blockCoordinator: LinesBlockCoordinator = new LinesBlockCoordinator();
     nextFromLine = 0;
+
+    totalLines: number;
+    isInIntro = true;
 
     constructor() {
         this.#setupCloseFileAbortController();
@@ -49,24 +56,55 @@ export class ParsedFileState {
         this.#closeFileAbortController.signal.addEventListener('abort', this.reset, {once: true});
     }
 
-    async addBlock(fromLine: number, block: Line[]) {
-        const from = this.nextFromLine;
-        this.nextFromLine = from + block.length;
-        await this.#blockCoordinator.addBlock(from, block);
-    }
-
-    get totalLines() {
-        return this.nextFromLine;
+    /**
+     *
+     * @param block
+     * @param isIntro is this is the starting blocks only made for fast file opening?
+     */
+    async addBlock(block: Line[], isIntro: boolean) {
+        if(isIntro) {
+            const from = this.introNextFromLine;
+            this.introNextFromLine = from + block.length;
+            await this.#introBlockCoordinator.addBlock(from, block);
+        } else {
+            const from = this.nextFromLine;
+            this.nextFromLine = from + block.length;
+            await this.#blockCoordinator.addBlock(from, block);
+        }
     }
 
     getLinesSync(fromLine: number) {
-        return this.#blockCoordinator.getLinesForLineSync(fromLine);
+        if(this.isInIntro) {
+            return this.#introBlockCoordinator.getLinesForLineSync(fromLine);
+        } else {
+            return this.#blockCoordinator.getLinesForLineSync(fromLine);
+        }
     }
 
     getLines(fromLine: number): Promise<Line[]> {
-        return this.#blockCoordinator.getLinesForLine(fromLine);
+        if(this.isInIntro) {
+            return this.#introBlockCoordinator.getLinesForLine(fromLine);
+        } else {
+            return this.#blockCoordinator.getLinesForLine(fromLine);
+        }
     }
 
+    markAsReady() {
+        this.isInIntro = false;
+        this.#introBlockCoordinator = undefined;
+        this.introNextFromLine = 0;
+    }
+
+    markIntroAsFull() {
+        this.nextFromLine = this.introNextFromLine;
+        this.#blockCoordinator = this.#introBlockCoordinator;
+
+        this.markAsReady();
+    }
+
+    shouldCreateFull() {
+        return this.isInIntro;
+    }
 }
 
 

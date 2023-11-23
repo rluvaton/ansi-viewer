@@ -28,9 +28,11 @@ I tried creating the app in Swift and making it MacOS only if it would be better
 but whenever I tried to load a file around 5MB it just used too much memory and I don't have much experience with Swift
 to use Swift-specific optimization
 
-### So Why it takes too long to open a single file
+### So why when I scroll past 1000 lines in huge file I don't see anything at the first couple of seconds
 
-This is one of the things I still need to fix, I should parse lite version of the page until I get the full file 
+Currently, in order to support fast opening of the file we load the first 10 blocks of lines (100 lines each) and in the background load the rest of the file
+
+I still need to fix it to not take too long AND to not load into memory the entire file (even compressed)
 
 ### So why it's performant?
 
@@ -51,7 +53,7 @@ wait for the blocks
 
 ## Limitations
 
-1. Slow opening large file (see above)
+1. Slow full large file loading (see above)
 2. No search
 3. Keeping in memory the file (compressed but still) so it's not good for large files
 

@@ -100,7 +100,7 @@ pre.${className} {
     }
 
     async parseFile(filePath: string) {
-        const parsedAnsiFile = new ParsedFileState();
+        const parsedAnsiFile = new ParsedFileState(filePath);
 
         const signal = this.#parsingAbortController.signal;
 

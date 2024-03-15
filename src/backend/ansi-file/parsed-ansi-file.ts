@@ -1,5 +1,5 @@
 import {BrowserWindow} from "electron";
-import {Line} from "../../shared-types";
+import {Line, SearchLocation, SearchResult} from "../../shared-types";
 import {LinesBlockCoordinator} from "./lines-block-coordinator";
 
 
@@ -11,8 +11,10 @@ export class ParsedFileState {
     #blockCoordinator: LinesBlockCoordinator = new LinesBlockCoordinator();
     nextFromLine = 0;
 
-    constructor() {
+    constructor(filePath: string) {
         this.#setupCloseFileAbortController();
+
+        this.#blockCoordinator.filePath = filePath;
     }
 
     static addNewState(window: BrowserWindow, state: ParsedFileState) {
@@ -64,6 +66,10 @@ export class ParsedFileState {
 
     getLines(fromLine: number): Promise<Line[]> {
         return this.#blockCoordinator.getLinesForLine(fromLine);
+    }
+
+    async search(search: string): Promise<SearchResult[]> {
+        return this.#blockCoordinator.search(search);
     }
 
 }

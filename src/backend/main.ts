@@ -1,3 +1,5 @@
+import 'source-map-support/register';
+
 import {app, BrowserWindow, ipcMain} from "electron";
 
 import * as path from "node:path";

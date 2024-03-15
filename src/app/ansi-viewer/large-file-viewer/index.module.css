@@ -12,6 +12,14 @@
         font-family: monospace;
 }
 
+.highlightLine {
+    background-color: yellow;
+    /* TODO - instead wrap with border and don't change background*/
+    color: black;
+}
+
+/* TODO - move line highlighting from index.html */
+
 /* nowrap exists, even though WebStorm says it doesn't: https://developer.mozilla.org/en-US/docs/Web/CSS/text-wrap#nowrap '*/
 /*noinspection ALL*/
 .ansiContainer .line {

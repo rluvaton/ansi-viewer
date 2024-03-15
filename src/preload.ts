@@ -2,7 +2,7 @@
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
 
 import {contextBridge, ipcRenderer} from "electron";
-import {FileParsedEvent, Line, OnFileSelectedCallback} from "./shared-types";
+import {FileParsedEvent, Line, OnFileSelectedCallback, SearchLocation, SearchResult} from "./shared-types";
 
 contextBridge.exposeInMainWorld('electron', {
     // --- General ---
@@ -32,4 +32,7 @@ contextBridge.exposeInMainWorld('electron', {
     // listenToFileChunks: (filePathToRead: string, cb: ListenToFileChunk) => ipcRenderer.on(`read-file-stream-${filePathToRead}`, cb),
     // cleanupFileChunkListener: (filePathToRead: string, cb: ListenToFileChunk) => ipcRenderer.off(`read-file-stream-${filePathToRead}`, cb),
     // startReadingFile: (filePathToRead: string) => ipcRenderer.send('read-file-stream', filePathToRead),
+
+    // --- Search related ---
+    searchInFile: (search: string): Promise<SearchResult[]> => ipcRenderer.invoke('search-in-file', search),
 });

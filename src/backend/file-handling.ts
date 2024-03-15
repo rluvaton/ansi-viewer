@@ -4,7 +4,7 @@ import {createReadStream} from "node:fs";
 import {getWindowFromEvent} from "./helper";
 import {OpenedFileState} from "./ansi-file/open-file-state";
 import {ParsedFileState} from "./ansi-file/parsed-ansi-file";
-import {FileParsedEvent} from "../shared-types";
+import {FileParsedEvent, SearchResult} from "../shared-types";
 import prettyBytes from "pretty-bytes";
 
 // TODO - listen for scroll events/search and send them to the renderer
@@ -152,12 +152,32 @@ ipcMain.handle('get-lines', async (event, fromLineNumber) => {
     return requestedLines;
 });
 
-setInterval(() => {
-    console.log(
-        'Memory usage',
-        Object.fromEntries(
-            Object.entries(process.memoryUsage())
-                .map(([key, value]) => [key, prettyBytes(value)])
-        )
-    );
-}, 1000);
+ipcMain.handle('search-in-file', async (event, search: string): Promise<SearchResult[]> => {
+    // TODO - abort previous search if it's still running
+
+    const window = getWindowFromEvent(event);
+
+    const parsed = ParsedFileState.getOpenedFileState(window)
+
+    if (!parsed) {
+        throw new Error('No file opened');
+    }
+
+    console.time(`search ${search}`);
+    const results = await parsed.search(search);
+    console.timeEnd(`search ${search}`);
+
+    console.log(`Found ${results.length} results for ${search}`);
+
+    return results;
+});
+//
+// setInterval(() => {
+//     console.log(
+//         'Memory usage',
+//         Object.fromEntries(
+//             Object.entries(process.memoryUsage())
+//                 .map(([key, value]) => [key, prettyBytes(value)])
+//         )
+//     );
+// }, 1000);

@@ -20,3 +20,17 @@ export type Line = {
 
 export type ListenToFileChunk = (event: IpcRendererEvent, chunkIndex: number, chunk: string) => void;
 export type OnFileSelectedCallback = (electronEvent: IpcRendererEvent, event: FileParsedEvent | undefined) => void
+
+export type SearchLocation = {
+    line: number,
+    column: number,
+    // Index of the text in the whole string
+    position: number
+}
+
+export type SearchResult = {
+    start: SearchLocation,
+    end: SearchLocation
+};
+
+

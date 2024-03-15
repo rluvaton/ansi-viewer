@@ -1,5 +1,5 @@
 import {action, makeObservable, observable} from "mobx";
-import {FileParsedEvent, Line} from "../../shared-types";
+import {FileParsedEvent, Line, SearchLocation, SearchResult} from "../../shared-types";
 import {LinesStorage} from "../lines-storage";
 import {LINES_BLOCK_SIZE} from "../../shared/constants";
 
@@ -16,15 +16,20 @@ export class CurrentFileStore {
 
     resetAbortController: AbortController = new AbortController();
 
+    highlightedLocation: SearchResult[] = [];
+
     constructor() {
         makeObservable(this, {
             currentFileState: observable,
             fileContent: observable,
             linesRerenderKey: observable,
+            highlightedLocation: observable,
             reset: action,
             selectFile: action,
             setAsReading: action,
             loadMoreLines: action,
+            clearHighlights: action,
+            setHighlights: action,
         });
 
         this.commonStyleElement = document.querySelector('style#common-style') as HTMLStyleElement;
@@ -163,6 +168,22 @@ export class CurrentFileStore {
         }
     }
 
+    async searchInFile(search: string) {
+        if(search === '') {
+            // TODO - clear highlights
+            this.clearHighlights();
+            return;
+        }
+
+        // TODO - abort old requests
+        const locations = await window.electron.searchInFile(search);
+
+        console.log('searchInFile', locations);
+
+        this.setHighlights(locations);
+        // TODO - set highlight
+    }
+
     setAsReading() {
         this.currentFileState = 'reading';
     }
@@ -201,5 +222,25 @@ export class CurrentFileStore {
     // the generated class name is the one that in the common style, style element
     getLine(lineNumber: number): Line | undefined {
         return this.linesStorage.getLine(lineNumber);
+    }
+
+    clearHighlights() {
+        this.highlightedLocation = [];
+    }
+
+    setHighlights(locations: SearchResult[]) {
+        this.highlightedLocation = locations;
+    }
+
+    isLineHighlighted(lineNumber: number): boolean {
+        return this.highlightedLocation.some(location => location.start.line <= lineNumber && location.end.line >= lineNumber);
+    }
+
+    getHighlightsForLine(lineNumber: number): SearchResult[] {
+        // TODO - fix for multi line highlighting
+        return this.highlightedLocation.filter(location => location.start.line <= lineNumber && location.end.line >= lineNumber);
+
+        // TODO - fix multiple highlights on same line
+        // TODO - fix multiple highlights that not start at the start of the line but end in the middle and another that start from the middle + something to other lines
     }
 }

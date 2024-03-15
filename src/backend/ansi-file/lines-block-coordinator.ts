@@ -1,8 +1,9 @@
 import assert from "node:assert";
 
 import {LinesBlock} from "./lines-block";
-import {Line} from "../../shared-types";
+import {Line, SearchLocation, SearchResult} from "../../shared-types";
 import {LINES_BLOCK_SIZE} from "../../shared/constants";
+import fs from "node:fs/promises";
 
 
 /**
@@ -21,6 +22,8 @@ export class LinesBlockCoordinator {
      * To avoid saving references the same block multiple times we gonna have rounded down to the nearest block size multiplication
      */
     #linesBlocks: LinesBlock[] = [];
+
+    filePath: string;
 
     #alreadyParsedBlocks: LinesBlock[] = [];
 
@@ -79,7 +82,7 @@ export class LinesBlockCoordinator {
 
     #parsePossibleNextBlockInBackground(blockIndex: number) {
         const block = this.#linesBlocks[blockIndex];
-        if(!block) {
+        if (!block) {
             // This should not happen as we already checked for this case
             return;
         }
@@ -90,7 +93,7 @@ export class LinesBlockCoordinator {
 
         // if the line is in the first block than load the next 2 blocks
         if (blockIndex === 0) {
-            blockIndexesToGetReady =  Array.from({length: 9}, (_, i) => i + 1);
+            blockIndexesToGetReady = Array.from({length: 9}, (_, i) => i + 1);
         } else if (blockIndex === this.#linesBlocks.length - 1) {
             blockIndexesToGetReady = Array.from({length: 9}, (_, i) => blockIndex - i - 1);
         } else {
@@ -145,5 +148,104 @@ export class LinesBlockCoordinator {
 
         return countWithoutLastBlock + (lastBlock ? lastBlock.toLine - lastBlock.fromLine : 0);
     }
+
+    async search(search: string): Promise<SearchResult[]> {
+        // TODO - search even if the result is between blocks
+        const fileContent = (await fs.readFile(this.filePath, 'utf-8')).toString();
+
+        // TODO - should better remove the ansi codes
+        // TODO - fix this
+        // eslint-disable-next-line no-control-regex
+        const fileContentWithoutAnsiCodes = fileContent.replace(/\u001b[^m]*?m/g,"")
+
+        const lines = fileContentWithoutAnsiCodes.split('\n');
+
+        const allSearchLocations: SearchResult[] = [];
+        let newSearchLocation: SearchResult | undefined;
+
+        do {
+            newSearchLocation = this.#getLocationOfSearch({
+                search,
+                content: fileContentWithoutAnsiCodes,
+                lines,
+                // This will avoid double highlighting on same location (searching for AA in AAA would result only in 1)
+                fromIndex: allSearchLocations[allSearchLocations.length - 1]?.end?.position ?? -1
+            });
+
+            if (newSearchLocation) {
+                allSearchLocations.push(newSearchLocation);
+            }
+        } while (newSearchLocation);
+
+        return allSearchLocations;
+    }
+
+    #getLocationOfSearch({search, content, lines, fromIndex}: {
+        search: string;
+        content: string;
+        lines: string[];
+        fromIndex: number;
+    }): SearchResult | undefined {
+        const position = content.indexOf(search, fromIndex + 1);
+
+        if (position === -1) {
+            return undefined;
+        }
+
+        let updatedPosition = position;
+
+        let line = 0;
+
+        let i = 0;
+
+        for (; i < lines.length; i++) {
+            const textLine = lines[i];
+            if (updatedPosition < textLine.length) {
+                break;
+            }
+
+            // +1 as we want to also count for the new line character
+            // TODO - what about \r\n
+            updatedPosition -= textLine.length + 1;
+            line++;
+        }
+
+        const start = {
+            line,
+            // The column is what left
+            column: updatedPosition,
+            position
+        };
+
+        updatedPosition += search.length - 1;
+
+        for (; i < lines.length; i++){
+            const textLine = lines[i];
+            if (updatedPosition < textLine.length) {
+                break;
+            }
+
+            // +1 as we want to also count for the new line character
+            // TODO - what about \r\n
+            updatedPosition -= textLine.length + 1;
+            line++;
+        }
+
+        const end = {
+            line,
+
+            // The column is what left
+            column: updatedPosition,
+            position: position + search.length - 1
+        }
+
+        return {
+            start,
+            end,
+        };
+    }
+
+
+
 
 }

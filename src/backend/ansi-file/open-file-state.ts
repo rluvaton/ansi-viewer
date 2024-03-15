@@ -4,7 +4,8 @@ import {BrowserWindow} from "electron";
 import {Line, LineItem} from "../../shared-types";
 import {ParsedFileState} from "./parsed-ansi-file";
 import {LINES_BLOCK_SIZE} from "../../shared/constants";
-import * as path from "node:path";
+import path from "node:path";
+import fs from "node:fs/promises";
 
 export class OpenedFileState {
     static #windowToOpenedFileState = new WeakMap<BrowserWindow, OpenedFileState>();
@@ -101,7 +102,7 @@ pre.${className} {
     async parseFile(filePath: string) {
         const parsedAnsiFile = new ParsedFileState();
 
-        parsedAnsiFile.totalLines = await this.computeTotalLines(filePath);
+        parsedAnsiFile.totalLines = await this.createBlockMap(filePath);
 
         await this.#parseAnsiFile(parsedAnsiFile, filePath, true);
 
@@ -267,19 +268,36 @@ pre.${className} {
         return parsedAnsiFile;
     }
 
-    async computeTotalLines(filePath: string) {
+    async createBlockMap(filePath: string) {
+
         console.time(`computeTotalLines ${path.basename(filePath)}`)
-        const numberOfLines = await createReadStream(filePath).reduce((totalLines, chunk) =>
-                totalLines +
-                // -1 because we only wanna count the number of new lines
-                chunk.toString().split('\n').length - 1,
-            0, {
-                signal: this.#parsingAbortController.signal
+        // Read file using file handle and compute number of lines
+        const fileHandle = await fs.open(filePath, 'r');
+            let totalLines = 0;
+        try {
+            while (true) {
+                const {bytesRead, buffer} = await fileHandle.read(Buffer.alloc(1048576), 0, 1048576);
+                if (bytesRead === 0) {
+                    break;
+                }
+
+                totalLines += buffer.toString().split('\n').length - 1;
             }
-        );
+        } finally {
+            await fileHandle.close();
+        }
+        //
+        // const numberOfLines = await createReadStream(filePath).reduce((totalLines, chunk) =>
+        //         totalLines +
+        //         // -1 because we only wanna count the number of new lines
+        //         chunk.toString().split('\n').length - 1,
+        //     0, {
+        //         signal: this.#parsingAbortController.signal
+        //     }
+        // );
         console.timeEnd(`computeTotalLines ${path.basename(filePath)}`);
 
-        return numberOfLines;
+        return totalLines;
     }
 
     async fastWay() {

@@ -41,6 +41,7 @@ export class CurrentFileStore {
         this.currentFileState = 'idle';
         this.fileContent = undefined;
         this.linesStorage.reset();
+        this.clearHighlights();
     }
 
     selectFile(event: FileParsedEvent, resetBefore = false) {

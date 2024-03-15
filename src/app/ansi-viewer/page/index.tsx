@@ -29,6 +29,7 @@ function AnsiViewerPageComp() {
     return (
         <div ref={containerRef}>
             {/*TODO - support new lines*/}
+            {/*TODO - support go to next and prev results*/}
             <div className={styles.searchContainer}>
                 <textarea
                     placeholder="Search"
@@ -37,6 +38,7 @@ function AnsiViewerPageComp() {
             </div>
 
             {/*TODO - highlight search locations*/}
+
             <LargeAnsiFileViewer
                 key={'large-viewer-' + currentInstanceStore.refreshKey}
             />

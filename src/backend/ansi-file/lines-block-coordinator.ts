@@ -150,6 +150,7 @@ export class LinesBlockCoordinator {
     }
 
     async search(search: string): Promise<SearchResult[]> {
+        // TODO - optimize this to not read the file and optimize the search
         // TODO - search even if the result is between blocks
         const fileContent = (await fs.readFile(this.filePath, 'utf-8')).toString();
 
@@ -213,7 +214,7 @@ export class LinesBlockCoordinator {
         const start = {
             line,
             // The column is what left
-            column: updatedPosition,
+            column: Math.max(updatedPosition, 0),
             position
         };
 
@@ -235,7 +236,7 @@ export class LinesBlockCoordinator {
             line,
 
             // The column is what left
-            column: updatedPosition,
+            column: Math.max(updatedPosition, 0),
             position: position + search.length - 1
         }
 

@@ -30,7 +30,7 @@ export class OpenedFileState {
 
         const parsedFileState: ParsedFileState = await state.parseFile(filePath);
 
-        if(!state.#parsingAbortController.signal.aborted) {
+        if (!state.#parsingAbortController.signal.aborted) {
             ParsedFileState.addNewState(window, parsedFileState);
         }
 
@@ -110,7 +110,7 @@ pre.${className} {
 
         let lineIndex = 0;
 
-        let currentLine: {lineIndex: number, items: LineItem[]} = {
+        let currentLine: { lineIndex: number, items: LineItem[] } = {
             lineIndex,
             items: [],
         };
@@ -174,7 +174,7 @@ pre.${className} {
                 }
             }
 
-            if(this.lines.length > LINES_BLOCK_SIZE) {
+            if (this.lines.length > LINES_BLOCK_SIZE) {
                 await this.addBlocks(parsedAnsiFile, false);
             }
         }
@@ -183,7 +183,7 @@ pre.${className} {
             this.lines.push(buildHtmlForItems(currentLine.lineIndex, currentLine.items));
         }
 
-        if(this.lines.length) {
+        if (this.lines.length) {
             await this.addBlocks(parsedAnsiFile, true);
         }
 
@@ -199,7 +199,7 @@ pre.${className} {
 
         for (let i = 0; i < this.lines.length; i += LINES_BLOCK_SIZE) {
             // Last item still need more data
-            if(!addLastBlock && this.lines.length - i < LINES_BLOCK_SIZE) {
+            if (!addLastBlock && this.lines.length - i < LINES_BLOCK_SIZE) {
                 this.lines = this.lines.slice(i);
                 break;
             }
@@ -218,6 +218,10 @@ pre.${className} {
 
 
 function buildHtmlForItems(lineIndex: number, items: LineItem[]): Line {
-    return {lineIndex, __html: `<code class="line-number noselect">${lineIndex + 1}</code>${items.map((item) => `<pre ${item.className ? `class="${item.className}"` : ''}>${item.text}</pre>`).join('')}`}
+    return {
+        lineIndex,
+        __html: `<code class="line-number noselect">${lineIndex + 1}</code>${items.map((item) => `<pre ${item.className ? `class="${item.className}"` : ''}>${item.text}</pre>`).join('')}`,
+        lineLength: items.reduce((acc, item) => acc + item.text.length, 0)
+    }
 }
 

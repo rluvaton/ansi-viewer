@@ -1,5 +1,6 @@
 import {app, BrowserWindow, Menu} from "electron";
 import {openFile} from "./file-handling";
+import {openGoTo} from "./file-navigation";
 
 export function setupMainMenu() {
 
@@ -69,6 +70,22 @@ export function setupMainMenu() {
                         // TODO - catch missing access errors and open dialog with error
                         // TODO - open window with the selected file if no window is open or replace the current one?
                         await openFile(browser, false);
+                    }
+                }
+            ]
+        },
+        {
+            label: 'Navigate',
+            submenu: [
+                {
+                    label: 'Go To',
+                    accelerator: 'CmdOrCtrl+G',
+                    // TODO - mark as disabled if no file is open
+                    // this is the main bit hijack the click event
+                    async click(_, browser) {
+                        // TODO - catch missing access errors and open dialog with error
+                        // TODO - open window with the selected file if no window is open or replace the current one?
+                        await openGoTo(browser, false);
                     }
                 }
             ]

@@ -1,15 +1,20 @@
-import React from 'react'
+import React, {useEffect, useRef} from 'react'
 import {Observer, observer} from "mobx-react-lite";
 import InfiniteLoader from 'react-window-infinite-loader';
 import {FixedSizeList, ListChildComponentProps} from "react-window";
 
 import {getContainer} from "../../stores/stores-container";
 import {LINES_BLOCK_SIZE} from "../../../shared/constants";
+import {LINE_HEIGHT} from "../../stores/go-to-action-store";
 
 import s from './index.module.css';
 
+
 function LargeAnsiFileViewerComp() {
-    const {currentFileStore, currentInstanceStore} = getContainer();
+    const contentRef = useRef<HTMLDivElement>(null);
+    const outerRef = useRef<HTMLElement>(null);
+
+    const {currentFileStore, currentInstanceStore, goToActionStore} = getContainer();
 
     if (currentFileStore.currentFileState === 'error') {
         return <div>Error</div>
@@ -19,52 +24,61 @@ function LargeAnsiFileViewerComp() {
         return <div>Loading...</div>
     }
 
-    const numberOfLines = currentFileStore.totalLines
+    const numberOfLines = currentFileStore.totalLines;
+
+    useEffect(() => {
+        goToActionStore.registerList(outerRef);
+
+        return () => {
+            goToActionStore.unregisterList();
+        };
+    }, [goToActionStore]);
 
     return (
-        <InfiniteLoader
-            // So it will re-render when the lines are loaded
-            // without making lines an observable (as it is a big array)
-            key={currentFileStore.linesRerenderKey}
-            isItemLoaded={currentFileStore.isLineNumberLoaded}
-            itemCount={numberOfLines}
-            loadMoreItems={currentFileStore.loadMoreLines}
-            minimumBatchSize={LINES_BLOCK_SIZE}
+        <div
+            ref={contentRef}
+            contentEditable={true}
+            spellCheck={false}
+            data-disable-content-edit={true}
+            className="strip-content-editable-style"
 
-            // fetch 5 more blocks so it will be smoother
-            threshold={LINES_BLOCK_SIZE * 5}
         >
-            {({onItemsRendered, ref}) =>
-                (
+            <InfiniteLoader
+                // So it will re-render when the lines are loaded
+                // without making lines an observable (as it is a big array)
+                key={currentFileStore.linesRerenderKey}
+                isItemLoaded={currentFileStore.isLineNumberLoaded}
+                itemCount={numberOfLines}
+                loadMoreItems={currentFileStore.loadMoreLines}
+                minimumBatchSize={LINES_BLOCK_SIZE}
+                // fetch 5 more blocks so it will be smoother
+                threshold={LINES_BLOCK_SIZE * 5}
+            >
+                {({onItemsRendered, ref}) => (
                     <Observer>
                         {() => (
-
                             // TODO - should not be fixed
                             <FixedSizeList
                                 key={currentFileStore.linesRerenderKey}
                                 className={s.ansiContainer}
-
                                 itemCount={numberOfLines}
                                 onItemsRendered={onItemsRendered}
+                                outerRef={outerRef}
                                 ref={ref}
-
                                 height={currentInstanceStore.windowInnerHeight}
                                 width="100%"
-
                                 // this is the line height
-                                // TODO - change to the actual line height by calculating it
-                                itemSize={22}
-
+                                itemSize={LINE_HEIGHT}
                                 overscanCount={LINES_BLOCK_SIZE * 3}
                             >
                                 {LineCode}
                             </FixedSizeList>
-
                         )}
                     </Observer>
                 )}
-        </InfiniteLoader>
-    )
+            </InfiniteLoader>
+        </div>
+    );
 }
 
 function LineCode({index, style}: ListChildComponentProps) {
@@ -72,12 +86,18 @@ function LineCode({index, style}: ListChildComponentProps) {
 
     const lineContent = currentFileStore.getLine(index);
 
-    if(!lineContent) {
+    if (!lineContent) {
         return null;
     }
 
     return (
-        <div key={index} style={style} className={`${s.line} ansi-line`} dangerouslySetInnerHTML={lineContent}></div>
+        //
+        <div
+            key={index}
+            style={style}
+            className={`${s.line} ansi-line`}
+            // TODO - line numbers should be fixed
+            dangerouslySetInnerHTML={lineContent}></div>
     )
 }
 

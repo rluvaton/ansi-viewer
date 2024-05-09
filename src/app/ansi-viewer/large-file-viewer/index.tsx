@@ -88,11 +88,6 @@ function LineCodeComp({index, style}: ListChildComponentProps) {
     const {currentFileStore} = getContainer();
 
     const lineContent = currentFileStore.getLine(index);
-
-    if (!lineContent) {
-        return null;
-    }
-
     const highlightsForLine = currentFileStore.getHighlightsForLine(index);
 
     useEffect(() => {
@@ -145,6 +140,12 @@ function LineCodeComp({index, style}: ListChildComponentProps) {
         }
 
     }, [highlightsForLine]);
+
+
+
+    if (!lineContent) {
+        return null;
+    }
 
 
     return (

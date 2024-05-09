@@ -9,15 +9,70 @@ export function cleanupKeyboardNavigationInFile() {
     document.removeEventListener('keydown', skipLineNumber);
 }
 
+const STARTING_RETRY_COUNT = 5;
 
 
-export function setCaretPosition(element: HTMLDivElement, line: number, column: number) {
-    console.log('Set caret position', {line, column});
-    element.focus()
-    // TODO - find a way to set the caret position as
-    // document.getSelection().setPosition(element.children[0], line + column);
-    // document.getSelection().setPosition(element.children[0], column);
+export function setCaretPosition(element: HTMLDivElement, line: number, column: number, retryCount = STARTING_RETRY_COUNT) {
+    const lineContent = document.querySelector(`pre[data-line="${line}"]`);
 
+    if (!lineContent) {
+        const sleepTime = (STARTING_RETRY_COUNT - retryCount + 1) * 100;
+
+        console.warn(`line ${line} not found, retrying in ${sleepTime}`);
+        // TODO - find a better way - like listen for the line to load or something
+
+        if(retryCount <= 0) {
+            console.warn(`reached max retry count looking for line ${line}`);
+            return;
+        }
+
+        setTimeout(() => {
+            setCaretPosition(element, line, column, retryCount - 1);
+        }, sleepTime);
+        return;
+    }
+
+    const lineLength = lineContent.textContent.length;
+    column = Math.min(column, lineLength);
+
+    element.focus();
+
+    setCaretPositionInLine(lineContent, column);
+}
+
+// Reference: https://stackoverflow.com/a/36953852/5923666
+function setCaretPositionInLine(el: Node, column: number) {
+
+    // Loop through all child nodes
+    for (const node of el.childNodes) {
+        if (node.nodeName !== '#text') {
+            column = setCaretPositionInLine(node, column);
+
+            if (column === -1) {
+                return -1; // no need to finish the for loop
+            }
+
+            continue;
+        }
+
+        // Text node
+        if (node.length < column) {
+            column -= node.length;
+            continue;
+        }
+
+        // finally add our range
+        const range = document.createRange();
+        const sel = window.getSelection();
+        range.setStart(node, column);
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
+
+        return -1; // we are done
+    }
+
+    return column; // needed because of recursion stuff
 }
 
 function avoidChangingInput(e: InputEvent) {
@@ -150,7 +205,7 @@ function onArrowLeft(e: KeyboardEvent) {
 
     const prevLine = prevElement.parentElement.previousElementSibling as HTMLElement;
 
-    if(prevLine === null) {
+    if (prevLine === null) {
         // reached the start of the file
         e.preventDefault();
         return;
@@ -207,7 +262,7 @@ function onArrowRight(e: KeyboardEvent) {
 
     const nextLine = lineElement.parentElement.nextElementSibling;
 
-    if(nextLine === null) {
+    if (nextLine === null) {
         console.log('reached the end of the file', range);
 
         // reached the end of the file
@@ -235,7 +290,7 @@ function shouldJumpToStartOfNextLine(e: KeyboardEvent, range: Range) {
         return false;
     }
 
-    if(range.endContainer.nodeName === '#text') {
+    if (range.endContainer.nodeName === '#text') {
         return (range.endContainer).length === range.endOffset + 1;
     }
 

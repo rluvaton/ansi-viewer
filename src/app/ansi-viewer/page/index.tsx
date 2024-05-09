@@ -5,7 +5,7 @@ import {LargeAnsiFileViewer} from "../large-file-viewer";
 import {getContainer} from "../../stores/stores-container";
 import {useCopyANSI} from "./use-copy-ansi";
 import {GoToActionSizeHelper, GoToPopUp} from "../../actions";
-import {CaretPositionPageMask} from "../../actions/highlight-caret-position/caret-position-page-mask";
+import {CaretPositionPageMask} from "../../actions/highlight-caret-position";
 
 function AnsiViewerPageComp() {
     const containerRef = React.useRef<HTMLDivElement>(null);

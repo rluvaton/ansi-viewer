@@ -44,6 +44,12 @@ export class CaretHighlightActionStore {
     }
 
     computeCaretLocation() {
+        // TODO - can be a problem if container changed
+        if(getContainer().signal.aborted) {
+            clearInterval(this.autoUpdateCaretLocation);
+            return;
+        }
+
         // Reference: https://stackoverflow.com/a/71242140/5923666
         let x = 0;
         let y = 0;

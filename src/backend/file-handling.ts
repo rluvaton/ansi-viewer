@@ -152,12 +152,12 @@ ipcMain.handle('get-lines', async (event, fromLineNumber) => {
     return requestedLines;
 });
 
-setInterval(() => {
-    console.log(
-        'Memory usage',
-        Object.fromEntries(
-            Object.entries(process.memoryUsage())
-                .map(([key, value]) => [key, prettyBytes(value)])
-        )
-    );
-}, 1000);
+// setInterval(() => {
+//     console.log(
+//         'Memory usage',
+//         Object.fromEntries(
+//             Object.entries(process.memoryUsage())
+//                 .map(([key, value]) => [key, prettyBytes(value)])
+//         )
+//     );
+// }, 1000);

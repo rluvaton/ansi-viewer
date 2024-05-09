@@ -1,0 +1,16 @@
+.mask {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+
+    /* Pass through mouse to the underlying element */
+    pointer-events: none;
+
+    &.hidden {
+        display: none;
+    }
+
+    z-index: 10;
+}

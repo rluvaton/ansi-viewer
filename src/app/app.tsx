@@ -18,18 +18,24 @@ function App() {
             getContainer().fileSelectorStore.onFileSelected(event);
         }
 
-        function onGoTo(_electronEvent: unknown) {
+        function onGoTo() {
             getContainer().goToActionStore.openGoTo();
+        }
+
+        function onHighlightCaretPosition() {
+            getContainer().caretHighlightActionStore.highlightCurrentLocation();
         }
 
         window.electron.onFileSelected(onFileSelected);
         window.electron.onOpenGoTo(onGoTo);
+        window.electron.onHighlightCaretPosition(onHighlightCaretPosition);
 
         window.electron.windowInitialized();
 
         return () => {
             window.electron.offFileSelected(onFileSelected);
             window.electron.offOpenGoTo(onGoTo);
+            window.electron.offHighlightCaretPosition(onHighlightCaretPosition);
         };
     }, []);
 

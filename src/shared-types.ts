@@ -20,4 +20,5 @@ export type Line = {
 
 export type ListenToFileChunk = (event: IpcRendererEvent, chunkIndex: number, chunk: string) => void;
 export type OnFileSelectedCallback = (electronEvent: IpcRendererEvent, event: FileParsedEvent | undefined) => void
-export type OnOpenGoToCallback = (electronEvent: IpcRendererEvent) => void
+export type EmptyCallbackFunction = () => void;
+export type OnOpenGoToCallback = EmptyCallbackFunction

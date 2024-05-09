@@ -1,6 +1,6 @@
 import {app, BrowserWindow, Menu} from "electron";
 import {openFile} from "./file-handling";
-import {openGoTo} from "./file-navigation";
+import {highlightCaretPosition, openGoTo} from "./misc-events";
 
 export function setupMainMenu() {
 
@@ -83,9 +83,23 @@ export function setupMainMenu() {
                     // TODO - mark as disabled if no file is open
                     // this is the main bit hijack the click event
                     async click(_, browser) {
-                        // TODO - catch missing access errors and open dialog with error
                         // TODO - open window with the selected file if no window is open or replace the current one?
-                        await openGoTo(browser, false);
+                        await openGoTo(browser);
+                    }
+                }
+            ]
+        },
+        {
+            label: 'View',
+            submenu: [
+                {
+                    label: 'Highlight Caret Position',
+                    accelerator: 'CmdOrCtrl+I',
+                    // TODO - mark as disabled if no file is open
+                    // this is the main bit hijack the click event
+                    async click(_, browser) {
+                        // TODO - open window with the selected file if no window is open or replace the current one?
+                        await highlightCaretPosition(browser);
                     }
                 }
             ]

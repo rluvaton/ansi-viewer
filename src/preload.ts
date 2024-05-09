@@ -2,7 +2,7 @@
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
 
 import {contextBridge, ipcRenderer} from "electron";
-import {FileParsedEvent, Line, OnFileSelectedCallback, OnOpenGoToCallback} from "./shared-types";
+import {EmptyCallbackFunction, FileParsedEvent, Line, OnFileSelectedCallback, OnOpenGoToCallback} from "./shared-types";
 
 contextBridge.exposeInMainWorld('electron', {
     // --- General ---
@@ -36,4 +36,6 @@ contextBridge.exposeInMainWorld('electron', {
     // From menu bar or keyboard shortcut
     onOpenGoTo: (cb: OnOpenGoToCallback) => ipcRenderer.on('open-go-to', cb),
     offOpenGoTo: (cb: OnOpenGoToCallback) => ipcRenderer.off('open-go-to', cb),
+    onHighlightCaretPosition: (cb: EmptyCallbackFunction) => ipcRenderer.on('highlight-caret-position', cb),
+    offHighlightCaretPosition: (cb: EmptyCallbackFunction) => ipcRenderer.off('highlight-caret-position', cb),
 });

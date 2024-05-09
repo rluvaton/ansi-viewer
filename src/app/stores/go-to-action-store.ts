@@ -130,7 +130,7 @@ export class GoToActionStore {
     openGoTo() {
         this.isOpen = true;
 
-        document.addEventListener('keydown', this.onEscape, {once: true, signal: getContainer().signal});
+        document.addEventListener('keydown', this.onEscape, {signal: getContainer().signal});
     }
 
     closeGoTo() {

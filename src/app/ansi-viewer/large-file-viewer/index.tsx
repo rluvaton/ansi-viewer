@@ -41,7 +41,12 @@ function LargeAnsiFileViewerComp() {
             spellCheck={false}
             data-disable-content-edit={true}
             className="strip-content-editable-style"
-
+            onKeyDown={(e) => {
+                if(e.key === 'i') {
+                    e.preventDefault();
+                    getContainer().caretHighlightActionStore.highlightCurrentLocation();
+                }
+            }}
         >
             <InfiniteLoader
                 // So it will re-render when the lines are loaded

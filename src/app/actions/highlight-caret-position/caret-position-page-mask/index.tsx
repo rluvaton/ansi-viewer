@@ -1,24 +1,52 @@
+import React from 'react'
+import {observer} from "mobx-react-lite";
+import {getContainer} from "../../../stores/stores-container";
 
-// Reference: https://stackoverflow.com/a/71242140/5923666
-function getCaretCoordinates() {
-    let x = 0,
-        y = 0;
-    const isSupported = typeof window.getSelection !== "undefined";
-    if (isSupported) {
-        const selection = window.getSelection();
-        // Check if there is a selection (i.e. cursor in place)
-        if (selection.rangeCount !== 0) {
-            // Clone the range
-            const range = selection.getRangeAt(0).cloneRange();
-            // Collapse the range to the start, so there are not multiple chars selected
-            range.collapse(true);
-            // getCientRects returns all the positioning information we need
-            const rect = range.getClientRects()[0];
-            if (rect) {
-                x = rect.left; // since the caret is only 1px wide, left == right
-                y = rect.top; // top edge of the caret
-            }
-        }
-    }
-    return { x, y };
+import s from './index.module.css';
+
+function getPathCircleAroundXAndY(x: number, y: number, radius: number) {
+    // Circle in path reference: https://stackoverflow.com/a/10477334/5923666
+
+    return `
+    M ${x} ${y}
+    m ${radius}, 0
+    a ${radius},${radius} 0 1,1 ${radius * -2},0
+    a ${radius},${radius} 0 1,1  ${radius * 2},0
+    `.trim()
 }
+
+function CaretPositionPageMaskComp() {
+    const firstRenderAfterOpenRef = React.useRef(true);
+    const {caretHighlightActionStore, currentInstanceStore} = getContainer();
+
+    if (!caretHighlightActionStore.isOpen) {
+        firstRenderAfterOpenRef.current = true;
+        // TODO - add closing animation
+        return null;
+    }
+
+    const {caretX, caretY} = caretHighlightActionStore;
+
+
+    // TODO -
+    return (<svg className={`${s.mask} ${!caretHighlightActionStore.isOpen ? s.hidden : ''}`}>
+
+        <path
+            fill-rule="evenodd"
+
+            // black color with 50% opacity
+            fill="rgba(0, 0, 0, 0.5)"
+            d={`
+               M 0 0
+               H ${currentInstanceStore.windowInnerWidth}
+               V ${currentInstanceStore.windowInnerHeight}
+               H 0 0
+               Z
+           
+               ${getPathCircleAroundXAndY(caretX, caretY, 40)}
+           `}/>
+
+    </svg>)
+}
+
+export const CaretPositionPageMask = observer(CaretPositionPageMaskComp);

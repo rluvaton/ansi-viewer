@@ -1,4 +1,11 @@
-import {FileParsedEvent, Line, ListenToFileChunk, OnFileSelectedCallback, OnOpenGoToCallback} from "./shared-types";
+import {
+    EmptyCallbackFunction,
+    FileParsedEvent,
+    Line,
+    ListenToFileChunk,
+    OnFileSelectedCallback,
+    OnOpenGoToCallback
+} from "./shared-types";
 
 
 declare global {
@@ -25,6 +32,9 @@ declare global {
 
             onOpenGoTo(cb: OnOpenGoToCallback): void,
             offOpenGoTo(cb: OnOpenGoToCallback): void,
+
+            onHighlightCaretPosition(cb: EmptyCallbackFunction): void,
+            offHighlightCaretPosition(cb: EmptyCallbackFunction): void,
         },
     }
 }

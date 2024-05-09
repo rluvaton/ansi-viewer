@@ -2,6 +2,7 @@ import {FileSelectorStore} from "./file-selector-store";
 import {CurrentFileStore} from "./current-file-store";
 import {CurrentInstanceStore} from "./current-instance-store";
 import {GoToActionStore} from "./go-to-action-store";
+import {CaretHighlightActionStore} from "./caret-highlight-action-store";
 
 class StoreContainer {
     static #instance?: StoreContainer;
@@ -11,6 +12,7 @@ class StoreContainer {
     private _currentFileStore: CurrentFileStore;
     private _currentInstanceStore: CurrentInstanceStore;
     private _goToActionStore: GoToActionStore;
+    private _caretHighlightActionStore: CaretHighlightActionStore;
 
     public get fileSelectorStore(): FileSelectorStore {
         return this._fileSelectorStore;
@@ -26,6 +28,10 @@ class StoreContainer {
 
     public get goToActionStore(): GoToActionStore {
         return this._goToActionStore;
+    }
+
+    public get caretHighlightActionStore(): CaretHighlightActionStore {
+        return this._caretHighlightActionStore;
     }
 
     public static get instance(): StoreContainer {
@@ -46,6 +52,7 @@ class StoreContainer {
         this._currentFileStore = new CurrentFileStore();
         this._currentFileStore = new CurrentFileStore();
         this._goToActionStore = new GoToActionStore();
+        this._caretHighlightActionStore = new CaretHighlightActionStore();
     }
 
     static reset() {

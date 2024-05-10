@@ -17,7 +17,7 @@ async function selectFile() {
         const result = await dialog.showOpenDialog({
             properties: ['openFile'],
             // TODO - remove this
-            defaultPath: '/Users/rluvaton/dev/personal/ansi-viewer/examples'
+            defaultPath: process.env.NODE_ENV !== 'production' ? '/Users/rluvaton/dev/personal/ansi-viewer/examples' : undefined
         });
         if (result.canceled) {
             console.log('canceled');
@@ -152,12 +152,12 @@ ipcMain.handle('get-lines', async (event, fromLineNumber) => {
     return requestedLines;
 });
 
-setInterval(() => {
-    console.log(
-        'Memory usage',
-        Object.fromEntries(
-            Object.entries(process.memoryUsage())
-                .map(([key, value]) => [key, prettyBytes(value)])
-        )
-    );
-}, 1000);
+// setInterval(() => {
+//     console.log(
+//         'Memory usage',
+//         Object.fromEntries(
+//             Object.entries(process.memoryUsage())
+//                 .map(([key, value]) => [key, prettyBytes(value)])
+//         )
+//     );
+// }, 1000);

@@ -1,4 +1,11 @@
-import {FileParsedEvent, Line, ListenToFileChunk, OnFileSelectedCallback} from "./shared-types";
+import {
+    EmptyCallbackFunction,
+    FileParsedEvent,
+    Line,
+    ListenToFileChunk,
+    OnFileSelectedCallback,
+    OnOpenGoToCallback
+} from "./shared-types";
 
 
 declare global {
@@ -22,6 +29,12 @@ declare global {
             cleanupFileChunkListener(filePathToRead: string, cb: ListenToFileChunk): void,
             startReadingFile(filePathToRead: string): void,
             getLines(fromLine: number): Promise<Line[]>,
+
+            onOpenGoTo(cb: OnOpenGoToCallback): void,
+            offOpenGoTo(cb: OnOpenGoToCallback): void,
+
+            onHighlightCaretPosition(cb: EmptyCallbackFunction): void,
+            offHighlightCaretPosition(cb: EmptyCallbackFunction): void,
         },
     }
 }

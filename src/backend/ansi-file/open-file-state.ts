@@ -218,6 +218,7 @@ pre.${className} {
 
 
 function buildHtmlForItems(lineIndex: number, items: LineItem[]): Line {
-    return {lineIndex, __html: `<code class="line-number noselect">${lineIndex + 1}</code>${items.map((item) => `<pre ${item.className ? `class="${item.className}"` : ''}>${item.text}</pre>`).join('')}`}
+    // Mark the inner pre as content-editable="true" so the user can navigate the text with the keyboard
+    return {lineIndex, __html: `<code contenteditable="false" class="line-number noselect">${lineIndex + 1}</code><pre contenteditable="true" spellcheck="false" data-disable-content-edit data-line="${lineIndex + 1}" class="strip-content-editable-style">${items.map((item) => `<pre ${item.className ? `class="${item.className}"` : ''}>${item.text}</pre>`).join('')}</pre>`}
 }
 

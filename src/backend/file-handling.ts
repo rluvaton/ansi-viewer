@@ -7,8 +7,6 @@ import {ParsedFileState} from "./ansi-file/parsed-ansi-file";
 import {FileParsedEvent} from "../shared-types";
 import prettyBytes from "pretty-bytes";
 
-// TODO - listen for scroll events/search and send them to the renderer
-
 let counter = 0;
 
 async function selectFile() {
@@ -16,7 +14,6 @@ async function selectFile() {
     try {
         const result = await dialog.showOpenDialog({
             properties: ['openFile'],
-            // TODO - remove this
             defaultPath: process.env.NODE_ENV !== 'production' ? '/Users/rluvaton/dev/personal/ansi-viewer/examples' : undefined
         });
         if (result.canceled) {
@@ -40,12 +37,6 @@ async function selectFile() {
 }
 
 async function assertFileAccessible(filePath: string) {
-    // Make sure the path:
-    // - exists
-    // - a file
-    // - have read access
-
-
     let fileStats;
 
     try {
@@ -74,38 +65,6 @@ ipcMain.handle('select-file', async (event) => {
     return await openFile(getWindowFromEvent(event), true);
 });
 
-// ipcMain.on('read-file-stream', async (event, filePath) => {
-//     console.log('read-file-stream', filePath);
-//
-//     getWindowFromEvent(event)?.setRepresentedFilename(filePath);
-//
-//     const eventNameForFileStreamChunks = `read-file-stream-${filePath}`
-//
-//     // TODO
-//     //  - add back pressure
-//     //  - if no ping than clean up so we don't have memory leak
-//     //  - add error handling
-//     //  - add cancellation
-//     //  - soft refresh should cancel the current file read
-//
-//     const stream = createReadStream(filePath)
-//     try {
-//         let index = 0;
-//         for await (const chunk of stream) {
-//             event.sender.send(eventNameForFileStreamChunks, index, chunk.toString());
-//             index++;
-//         }
-//
-//         console.log('finish')
-//         event.sender.send(eventNameForFileStreamChunks, index, null)
-//     } catch (e) {
-//         console.error('failed to read file', e)
-//         // TODO - send error
-//         event.sender.send(eventNameForFileStreamChunks, null)
-//     }
-// })
-
-
 export async function openFile(window: BrowserWindow, requestedFromClient: boolean) {
     const filePath = await selectFile();
 
@@ -117,7 +76,6 @@ export async function openFile(window: BrowserWindow, requestedFromClient: boole
 
     window.setRepresentedFilename(filePath);
 
-    // Just to let the renderer know that the file was selected
     window.webContents.send('file-selected', filePath);
 
     console.time('openFile: parse file');
@@ -152,12 +110,19 @@ ipcMain.handle('get-lines', async (event, fromLineNumber) => {
     return requestedLines;
 });
 
-// setInterval(() => {
-//     console.log(
-//         'Memory usage',
-//         Object.fromEntries(
-//             Object.entries(process.memoryUsage())
-//                 .map(([key, value]) => [key, prettyBytes(value)])
-//         )
-//     );
-// }, 1000);
+// New IPC event handler for search queries
+ipcMain.handle('search-in-file', async (event, query) => {
+    const window = getWindowFromEvent(event);
+    const parsed = ParsedFileState.getOpenedFileState(window);
+
+    if (!parsed) {
+        throw new Error('No file opened');
+    }
+
+    // Implement search logic here
+    // This is a placeholder for the actual search implementation
+    const searchResults = []; // Placeholder for search results
+
+    // Emit search results back to the renderer process
+    event.sender.send('search-results', searchResults);
+});

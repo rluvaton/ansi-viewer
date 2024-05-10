@@ -36,3 +36,19 @@ The reason we decompress the next blocks in the background is so that if the use
 
 ## Limitations
 1. Only files below 1GB are supported at the moment (as we read the full file into memory instead of using streams, we should use streams both for memory consumption and faster opening time)
+
+## New Search Functionality
+The application now supports a powerful search functionality that allows users to search through the entire content of the ANSI file, not just what is currently loaded or displayed. This feature is designed to enhance the user experience by providing a more efficient way to locate specific information within large files.
+
+### How to Use the Search Feature
+- To initiate a search, simply enter your search query in the search input field located at the top of the application window.
+- Press the "Search" button or hit "Enter" to start the search.
+- The search results will be displayed in a list, showing the line numbers and snippets of text where the search term was found.
+- Click on a search result to navigate directly to the corresponding location in the file.
+
+### Keyboard Shortcuts
+- `Ctrl+F` / `Cmd+F`: Open the search input field to type your query.
+- `Enter`: Start the search after typing your query.
+- `Esc`: Close the search results and return to the file view.
+
+This search functionality is designed to make it easier for users to find the information they need within large ANSI files, improving the overall efficiency of navigating through the file content.

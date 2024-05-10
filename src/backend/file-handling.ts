@@ -17,7 +17,7 @@ async function selectFile() {
         const result = await dialog.showOpenDialog({
             properties: ['openFile'],
             // TODO - remove this
-            defaultPath: '/Users/rluvaton/dev/personal/ansi-viewer/examples'
+            defaultPath: process.env.NODE_ENV !== 'production' ? '/Users/rluvaton/dev/personal/ansi-viewer/examples' : undefined
         });
         if (result.canceled) {
             console.log('canceled');

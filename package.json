@@ -19,9 +19,7 @@
 		"email": "16746759+rluvaton@users.noreply.github.com"
 	},
 	"lint-staged": {
-		"*": [
-			"biome check --no-errors-on-unmatched --files-ignore-unknown=true"
-		]
+		"*": ["biome check --no-errors-on-unmatched --files-ignore-unknown=true"]
 	},
 	"license": "MIT",
 	"devDependencies": {

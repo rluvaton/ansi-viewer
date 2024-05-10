@@ -1,45 +1,59 @@
-import {action, computed, makeObservable, observable, runInAction} from "mobx";
+import {
+	action,
+	computed,
+	makeObservable,
+	observable,
+	runInAction,
+} from "mobx";
 
 export class CurrentInstanceStore {
-    public _refreshKeyNumber = 0;
-    #currentWindowId: number;
+	public _refreshKeyNumber = 0;
+	#currentWindowId: number;
 
-    public windowInnerHeight = window.innerHeight;
-    public windowInnerWidth = window.innerWidth;
+	public windowInnerHeight = window.innerHeight;
+	public windowInnerWidth = window.innerWidth;
 
-    constructor(cleanupSignal: AbortSignal) {
-        makeObservable(this, {
-            _refreshKeyNumber: observable,
-            refreshKey: computed,
-            refresh: action,
-            windowInnerHeight: observable,
-            windowInnerWidth: observable,
-        });
+	constructor(cleanupSignal: AbortSignal) {
+		makeObservable(this, {
+			_refreshKeyNumber: observable,
+			refreshKey: computed,
+			refresh: action,
+			windowInnerHeight: observable,
+			windowInnerWidth: observable,
+		});
 
-        window.electron.onSoftRefresh(this.refresh);
-        cleanupSignal.addEventListener('abort', () => {
-            window.electron.offSoftRefresh(this.refresh);
-        }, {once: true});
+		window.electron.onSoftRefresh(this.refresh);
+		cleanupSignal.addEventListener(
+			"abort",
+			() => {
+				window.electron.offSoftRefresh(this.refresh);
+			},
+			{ once: true },
+		);
 
-        window.addEventListener("resize", () => {
-            runInAction(() => {
-                this.windowInnerHeight = window.innerHeight;
-                this.windowInnerWidth = window.innerWidth;
-            });
-        }, {signal: cleanupSignal});
+		window.addEventListener(
+			"resize",
+			() => {
+				runInAction(() => {
+					this.windowInnerHeight = window.innerHeight;
+					this.windowInnerWidth = window.innerWidth;
+				});
+			},
+			{ signal: cleanupSignal },
+		);
 
-        this.#currentWindowId = window.electron.getWindowId();
-    }
+		this.#currentWindowId = window.electron.getWindowId();
+	}
 
-    refresh = () => {
-        this._refreshKeyNumber++;
-    }
+	refresh = () => {
+		this._refreshKeyNumber++;
+	};
 
-    get refreshKey(): string {
-        return `${this._refreshKeyNumber}`;
-    }
+	get refreshKey(): string {
+		return `${this._refreshKeyNumber}`;
+	}
 
-    public get currentWindowId(): number {
-        return this.#currentWindowId;
-    }
+	public get currentWindowId(): number {
+		return this.#currentWindowId;
+	}
 }

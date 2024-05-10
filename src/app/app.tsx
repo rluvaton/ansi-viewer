@@ -1,58 +1,61 @@
-import React, {useEffect} from "react";
-import {LandingPage} from "./landing-page";
-import {AnsiViewerPage} from "./ansi-viewer/page";
-import {getContainer} from "./stores/stores-container";
-import {observer} from "mobx-react-lite";
-import {FileParsedEvent} from "../shared-types";
+import { observer } from "mobx-react-lite";
+import React, { useEffect } from "react";
+import { FileParsedEvent } from "../shared-types";
+import { AnsiViewerPage } from "./ansi-viewer/page";
+import { LandingPage } from "./landing-page";
 import { KeyboardNavigationInFileService } from "./services";
+import { getContainer } from "./stores/stores-container";
 
 function App() {
-    const {fileSelectorStore, currentFileStore, currentInstanceStore} = getContainer();
+	const { fileSelectorStore, currentFileStore, currentInstanceStore } =
+		getContainer();
 
-    useEffect(() => {
-        function onFileSelected(electronEvent: unknown, event: FileParsedEvent) {
-            // Ignore events that were triggered by the client to avoid duplicate parsing
-            if (event.requestedFromClient) {
-                return;
-            }
-            getContainer().fileSelectorStore.onFileSelected(event);
-        }
+	useEffect(() => {
+		function onFileSelected(_electronEvent: unknown, event: FileParsedEvent) {
+			// Ignore events that were triggered by the client to avoid duplicate parsing
+			if (event.requestedFromClient) {
+				return;
+			}
+			getContainer().fileSelectorStore.onFileSelected(event);
+		}
 
-        function onGoTo() {
-            getContainer().goToActionStore.openGoTo();
-        }
+		function onGoTo() {
+			getContainer().goToActionStore.openGoTo();
+		}
 
-        function onHighlightCaretPosition() {
-            getContainer().caretHighlightActionStore.highlightCurrentLocation();
-        }
+		function onHighlightCaretPosition() {
+			getContainer().caretHighlightActionStore.highlightCurrentLocation();
+		}
 
-        window.electron.onFileSelected(onFileSelected);
-        window.electron.onOpenGoTo(onGoTo);
-        window.electron.onHighlightCaretPosition(onHighlightCaretPosition);
+		window.electron.onFileSelected(onFileSelected);
+		window.electron.onOpenGoTo(onGoTo);
+		window.electron.onHighlightCaretPosition(onHighlightCaretPosition);
 
-        window.electron.windowInitialized();
+		window.electron.windowInitialized();
 
-        return () => {
-            window.electron.offFileSelected(onFileSelected);
-            window.electron.offOpenGoTo(onGoTo);
-            window.electron.offHighlightCaretPosition(onHighlightCaretPosition);
-        };
-    }, []);
+		return () => {
+			window.electron.offFileSelected(onFileSelected);
+			window.electron.offOpenGoTo(onGoTo);
+			window.electron.offHighlightCaretPosition(onHighlightCaretPosition);
+		};
+	}, []);
 
+	useEffect(() => {
+		KeyboardNavigationInFileService.setupKeyboardNavigationInFile();
 
-    useEffect(() => {
-        KeyboardNavigationInFileService.setupKeyboardNavigationInFile();
+		return () => {
+			KeyboardNavigationInFileService.cleanupKeyboardNavigationInFile();
+		};
+	}, []);
 
-        return () => {
-            KeyboardNavigationInFileService.cleanupKeyboardNavigationInFile();
-        }
-    }, []);
+	if (
+		fileSelectorStore.fileSelectingState === "idle" ||
+		currentFileStore.currentFileState === "idle"
+	) {
+		return <LandingPage key={"landing-" + currentInstanceStore.refreshKey} />;
+	}
 
-    if (fileSelectorStore.fileSelectingState === 'idle' || currentFileStore.currentFileState === 'idle') {
-        return <LandingPage key={'landing-' + currentInstanceStore.refreshKey}/>
-    }
-
-    return <AnsiViewerPage key={'viewer-' + currentInstanceStore.refreshKey}/>
+	return <AnsiViewerPage key={"viewer-" + currentInstanceStore.refreshKey} />;
 }
 
-export default observer(App)
+export default observer(App);

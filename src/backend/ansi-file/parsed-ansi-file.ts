@@ -1,71 +1,74 @@
-import {BrowserWindow} from "electron";
-import {Line} from "../../shared-types";
-import {LinesBlockCoordinator} from "./lines-block-coordinator";
-
+import { BrowserWindow } from "electron";
+import { Line } from "../../shared-types";
+import { LinesBlockCoordinator } from "./lines-block-coordinator";
 
 export class ParsedFileState {
-    static #windowToParsedFileState = new WeakMap<BrowserWindow, ParsedFileState>();
+	static #windowToParsedFileState = new WeakMap<
+		BrowserWindow,
+		ParsedFileState
+	>();
 
-    #closeFileAbortController: AbortController;
-    commonStyle = '';
-    #blockCoordinator: LinesBlockCoordinator = new LinesBlockCoordinator();
-    nextFromLine = 0;
+	#closeFileAbortController: AbortController;
+	commonStyle = "";
+	#blockCoordinator: LinesBlockCoordinator = new LinesBlockCoordinator();
+	nextFromLine = 0;
 
-    constructor() {
-        this.#setupCloseFileAbortController();
-    }
+	constructor() {
+		this.#setupCloseFileAbortController();
+	}
 
-    static addNewState(window: BrowserWindow, state: ParsedFileState) {
-        ParsedFileState.#windowToParsedFileState.set(window, state);
-    }
+	static addNewState(window: BrowserWindow, state: ParsedFileState) {
+		ParsedFileState.#windowToParsedFileState.set(window, state);
+	}
 
-    static removeStateForWindow(window: BrowserWindow) {
-        const state = ParsedFileState.#windowToParsedFileState.get(window);
+	static removeStateForWindow(window: BrowserWindow) {
+		const state = ParsedFileState.#windowToParsedFileState.get(window);
 
-        if (!state) {
-            return;
-        }
+		if (!state) {
+			return;
+		}
 
-        state.abort();
+		state.abort();
 
-        ParsedFileState.#windowToParsedFileState.delete(window);
-    }
+		ParsedFileState.#windowToParsedFileState.delete(window);
+	}
 
-    static getOpenedFileState(window: BrowserWindow) {
-        return this.#windowToParsedFileState.get(window);
-    }
+	static getOpenedFileState(window: BrowserWindow) {
+		return this.#windowToParsedFileState.get(window);
+	}
 
-    reset = () => {
-        this.abort();
-    }
+	reset = () => {
+		this.abort();
+	};
 
-    abort() {
-        this.#closeFileAbortController.abort();
-        this.#setupCloseFileAbortController();
-    }
+	abort() {
+		this.#closeFileAbortController.abort();
+		this.#setupCloseFileAbortController();
+	}
 
-    #setupCloseFileAbortController() {
-        this.#closeFileAbortController = new AbortController();
-        this.#closeFileAbortController.signal.addEventListener('abort', this.reset, {once: true});
-    }
+	#setupCloseFileAbortController() {
+		this.#closeFileAbortController = new AbortController();
+		this.#closeFileAbortController.signal.addEventListener(
+			"abort",
+			this.reset,
+			{ once: true },
+		);
+	}
 
-    async addBlock(fromLine: number, block: Line[]) {
-        this.nextFromLine = Math.max(fromLine + block.length, this.nextFromLine);
-        await this.#blockCoordinator.addBlock(fromLine, block);
-    }
+	async addBlock(fromLine: number, block: Line[]) {
+		this.nextFromLine = Math.max(fromLine + block.length, this.nextFromLine);
+		await this.#blockCoordinator.addBlock(fromLine, block);
+	}
 
-    get totalLines() {
-        return this.nextFromLine;
-    }
+	get totalLines() {
+		return this.nextFromLine;
+	}
 
-    getLinesSync(fromLine: number) {
-        return this.#blockCoordinator.getLinesForLineSync(fromLine);
-    }
+	getLinesSync(fromLine: number) {
+		return this.#blockCoordinator.getLinesForLineSync(fromLine);
+	}
 
-    getLines(fromLine: number): Promise<Line[]> {
-        return this.#blockCoordinator.getLinesForLine(fromLine);
-    }
-
+	getLines(fromLine: number): Promise<Line[]> {
+		return this.#blockCoordinator.getLinesForLine(fromLine);
+	}
 }
-
-

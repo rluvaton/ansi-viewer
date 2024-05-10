@@ -1,5 +1,7 @@
-import {BrowserWindow, IpcMainEvent, IpcMainInvokeEvent} from "electron";
+import { BrowserWindow, IpcMainEvent, IpcMainInvokeEvent } from "electron";
 
 export function getWindowFromEvent(event: IpcMainEvent | IpcMainInvokeEvent) {
-    return BrowserWindow.getAllWindows().find((win) => win.webContents.id === event.sender.id)
+	return BrowserWindow.getAllWindows().find(
+		(win) => win.webContents.id === event.sender.id,
+	);
 }

@@ -1,1 +1,1 @@
-export {CaretPositionPageMask} from './caret-position-page-mask';
+export { CaretPositionPageMask } from "./caret-position-page-mask";

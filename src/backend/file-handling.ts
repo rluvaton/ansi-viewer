@@ -1,77 +1,82 @@
-import {BrowserWindow, dialog, ipcMain} from "electron";
+import { createReadStream } from "node:fs";
 import * as fs from "node:fs/promises";
-import {createReadStream} from "node:fs";
-import {getWindowFromEvent} from "./helper";
-import {OpenedFileState} from "./ansi-file/open-file-state";
-import {ParsedFileState} from "./ansi-file/parsed-ansi-file";
-import {FileParsedEvent} from "../shared-types";
+import { BrowserWindow, dialog, ipcMain } from "electron";
 import prettyBytes from "pretty-bytes";
+import { FileParsedEvent } from "../shared-types";
+import { OpenedFileState } from "./ansi-file/open-file-state";
+import { ParsedFileState } from "./ansi-file/parsed-ansi-file";
+import { getWindowFromEvent } from "./helper";
 
 // TODO - listen for scroll events/search and send them to the renderer
 
 let counter = 0;
 
 async function selectFile() {
-    let selectedFilePath: string;
-    try {
-        const result = await dialog.showOpenDialog({
-            properties: ['openFile'],
-            // TODO - remove this
-            defaultPath: process.env.NODE_ENV !== 'production' ? '/Users/rluvaton/dev/personal/ansi-viewer/examples' : undefined
-        });
-        if (result.canceled) {
-            console.log('canceled');
-            return undefined;
-        }
+	let selectedFilePath: string;
+	try {
+		const result = await dialog.showOpenDialog({
+			properties: ["openFile"],
+			// TODO - remove this
+			defaultPath:
+				process.env.NODE_ENV !== "production"
+					? "/Users/rluvaton/dev/personal/ansi-viewer/examples"
+					: undefined,
+		});
+		if (result.canceled) {
+			console.log("canceled");
+			return undefined;
+		}
 
-        selectedFilePath = result.filePaths[0];
-    } catch (err) {
-        console.error('Failed to get file', err);
-        return undefined
-    }
+		selectedFilePath = result.filePaths[0];
+	} catch (err) {
+		console.error("Failed to get file", err);
+		return undefined;
+	}
 
-    if (!selectedFilePath) {
-        return undefined;
-    }
+	if (!selectedFilePath) {
+		return undefined;
+	}
 
-    await assertFileAccessible(selectedFilePath);
+	await assertFileAccessible(selectedFilePath);
 
-    return selectedFilePath;
+	return selectedFilePath;
 }
 
 async function assertFileAccessible(filePath: string) {
-    // Make sure the path:
-    // - exists
-    // - a file
-    // - have read access
+	// Make sure the path:
+	// - exists
+	// - a file
+	// - have read access
 
+	let fileStats;
 
-    let fileStats;
+	try {
+		fileStats = await fs.stat(filePath);
+	} catch (e) {
+		if (e.code === "ENOENT") {
+			throw new Error("file not found");
+		}
 
-    try {
-        fileStats = await fs.stat(filePath);
-    } catch (e) {
-        if (e.code === 'ENOENT') {
-            throw new Error('file not found');
-        }
+		console.error("failed to get file stats", e);
+		throw new Error("Failed to get file");
+	}
 
-        console.error('failed to get file stats', e);
-        throw new Error('Failed to get file');
-    }
+	if (!fileStats.isFile()) {
+		throw new Error("not a file");
+	}
 
-    if (!fileStats.isFile()) {
-        throw new Error('not a file');
-    }
-
-    try {
-        await fs.access(filePath, fs.constants.R_OK);
-    } catch (e) {
-        throw new Error('Access denied');
-    }
+	try {
+		await fs.access(filePath, fs.constants.R_OK);
+	} catch (e) {
+		if (e.code === "EACCES") {
+			throw new Error("Access denied");
+		}
+		throw e;
+	}
 }
 
-ipcMain.handle('select-file', async (event) => {
-    return await openFile(getWindowFromEvent(event), true);
+ipcMain.handle("select-file", async (event) => {
+	return await openFile(getWindowFromEvent(event), true);
 });
 
 // ipcMain.on('read-file-stream', async (event, filePath) => {
@@ -105,51 +110,53 @@ ipcMain.handle('select-file', async (event) => {
 //     }
 // })
 
+export async function openFile(
+	window: BrowserWindow,
+	requestedFromClient: boolean,
+) {
+	const filePath = await selectFile();
 
-export async function openFile(window: BrowserWindow, requestedFromClient: boolean) {
-    const filePath = await selectFile();
+	if (!filePath) {
+		window.webContents.send("file-selected", filePath);
+		window.webContents.send("file-parsed", undefined);
+		return undefined;
+	}
 
-    if (!filePath) {
-        window.webContents.send('file-selected', filePath);
-        window.webContents.send('file-parsed', undefined);
-        return undefined;
-    }
+	window.setRepresentedFilename(filePath);
 
-    window.setRepresentedFilename(filePath);
+	// Just to let the renderer know that the file was selected
+	window.webContents.send("file-selected", filePath);
 
-    // Just to let the renderer know that the file was selected
-    window.webContents.send('file-selected', filePath);
+	console.time("openFile: parse file");
+	const parsed = await OpenedFileState.parseNewFile(window, filePath);
+	console.timeEnd("openFile: parse file");
 
-    console.time('openFile: parse file');
-    const parsed = await OpenedFileState.parseNewFile(window, filePath);
-    console.timeEnd('openFile: parse file');
+	window.webContents.send("file-parsed", {
+		filePath,
+		totalLines: parsed.totalLines,
+		firstLines: parsed.getLinesSync(0),
+		globalStyle: parsed.commonStyle,
+		requestedFromClient,
+	} satisfies FileParsedEvent);
 
-    window.webContents.send('file-parsed', {
-        filePath,
-        totalLines: parsed.totalLines,
-        firstLines: parsed.getLinesSync(0),
-        globalStyle: parsed.commonStyle,
-        requestedFromClient,
-    } satisfies FileParsedEvent);
-
-    return filePath;
+	return filePath;
 }
 
-ipcMain.handle('get-lines', async (event, fromLineNumber) => {
-    const window = getWindowFromEvent(event);
+ipcMain.handle("get-lines", async (event, fromLineNumber) => {
+	const window = getWindowFromEvent(event);
 
-    const parsed = ParsedFileState.getOpenedFileState(window)
+	const parsed = ParsedFileState.getOpenedFileState(window);
 
-    if (!parsed) {
-        throw new Error('No file opened');
-    }
+	if (!parsed) {
+		throw new Error("No file opened");
+	}
 
-    const currentNum = counter++;
-    console.time(`get lines ${currentNum}`);
-    const requestedLines = await parsed.getLines(fromLineNumber);
-    console.timeEnd(`get lines ${currentNum}`);
+	const currentNum = counter++;
+	console.time(`get lines ${currentNum}`);
+	const requestedLines = await parsed.getLines(fromLineNumber);
+	console.timeEnd(`get lines ${currentNum}`);
 
-    return requestedLines;
+	return requestedLines;
 });
 
 // setInterval(() => {

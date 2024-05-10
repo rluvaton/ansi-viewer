@@ -22,7 +22,7 @@
 	},
 	"lint-staged": {
 		"*": [
-			"biome check --no-errors-on-unmatched --files-ignore-unknown=true"
+			"biome check --apply --no-errors-on-unmatched --files-ignore-unknown=true"
 		]
 	},
 	"license": "MIT",
@@ -42,6 +42,7 @@
 		"@types/react-window-infinite-loader": "^1.0.9",
 		"@vitejs/plugin-react": "^4.1.1",
 		"electron": "27.0.3",
+		"electron-playwright-helpers": "^1.7.1",
 		"lint-staged": "^15.2.2",
 		"playwright": "^1.44.0",
 		"ts-node": "^10.9.1",
@@ -49,11 +50,13 @@
 	},
 	"dependencies": {
 		"ansicolor": "^2.0.1",
+		"electron-log": "^5.1.4",
 		"electron-squirrel-startup": "^1.0.0",
 		"husky": "^9.0.11",
 		"mobx": "^6.10.2",
 		"mobx-react-lite": "^4.0.5",
 		"pretty-bytes": "^5.6.0",
+		"pretty-ms": "^9.0.0",
 		"react": "^18.2.0",
 		"react-dom": "^18.2.0",
 		"react-window": "^1.8.9",

@@ -2,6 +2,7 @@ import assert from "node:assert";
 
 import { Line } from "../../shared-types";
 import { LINES_BLOCK_SIZE } from "../../shared/constants";
+import { logger } from "../logger";
 import { LinesBlock } from "./lines-block";
 
 /**
@@ -139,7 +140,7 @@ export class LinesBlockCoordinator {
 
 					this.#alreadyParsedBlocks.push(...parsedBlocks);
 				} catch (e) {
-					console.error("failed parsing next blocks", e);
+					logger.error("failed parsing next blocks", e);
 				}
 			}, 0);
 		}

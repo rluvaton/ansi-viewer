@@ -1,11 +1,10 @@
-import { createReadStream } from "node:fs";
 import * as fs from "node:fs/promises";
 import { BrowserWindow, dialog, ipcMain } from "electron";
-import prettyBytes from "pretty-bytes";
 import { FileParsedEvent } from "../shared-types";
 import { OpenedFileState } from "./ansi-file/open-file-state";
 import { ParsedFileState } from "./ansi-file/parsed-ansi-file";
-import { getWindowFromEvent } from "./helper";
+import { getWindowFromEvent, runFnAndLogDuration } from "./helper";
+import { logger } from "./logger";
 
 // TODO - listen for scroll events/search and send them to the renderer
 
@@ -23,13 +22,13 @@ async function selectFile() {
 					: undefined,
 		});
 		if (result.canceled) {
-			console.log("canceled");
+			logger.log("canceled");
 			return undefined;
 		}
 
 		selectedFilePath = result.filePaths[0];
 	} catch (err) {
-		console.error("Failed to get file", err);
+		logger.error("Failed to get file", err);
 		return undefined;
 	}
 
@@ -57,7 +56,7 @@ async function assertFileAccessible(filePath: string) {
 			throw new Error("file not found");
 		}
 
-		console.error("failed to get file stats", e);
+		logger.error("failed to get file stats", e);
 		throw new Error("Failed to get file");
 	}
 
@@ -80,7 +79,7 @@ ipcMain.handle("select-file", async (event) => {
 });
 
 // ipcMain.on('read-file-stream', async (event, filePath) => {
-//     console.log('read-file-stream', filePath);
+//     logger.info('read-file-stream', filePath);
 //
 //     getWindowFromEvent(event)?.setRepresentedFilename(filePath);
 //
@@ -101,10 +100,10 @@ ipcMain.handle("select-file", async (event) => {
 //             index++;
 //         }
 //
-//         console.log('finish')
+//         logger,info('finish')
 //         event.sender.send(eventNameForFileStreamChunks, index, null)
 //     } catch (e) {
-//         console.error('failed to read file', e)
+//         logger.error('failed to read file', e)
 //         // TODO - send error
 //         event.sender.send(eventNameForFileStreamChunks, null)
 //     }
@@ -116,28 +115,52 @@ export async function openFile(
 ) {
 	const filePath = await selectFile();
 
+	return await openFilePath({ window, filePath, requestedFromClient });
+}
+
+export async function openFilePath({
+	window,
+	filePath,
+	requestedFromClient,
+}: {
+	window: Electron.CrossProcessExports.BrowserWindow;
+	filePath: string;
+	requestedFromClient: boolean;
+}) {
+	logger.info("openFilePath", { filePath, requestedFromClient });
 	if (!filePath) {
+		logger.warn("no file selected");
 		window.webContents.send("file-selected", filePath);
 		window.webContents.send("file-parsed", undefined);
 		return undefined;
 	}
+
+	logger.info("file path exists", { filePath, requestedFromClient });
 
 	window.setRepresentedFilename(filePath);
 
 	// Just to let the renderer know that the file was selected
 	window.webContents.send("file-selected", filePath);
 
-	console.time("openFile: parse file");
-	const parsed = await OpenedFileState.parseNewFile(window, filePath);
-	console.timeEnd("openFile: parse file");
+	const parsed = await runFnAndLogDuration({
+		name: "parse file",
+		fn: () => OpenedFileState.parseNewFile(window, filePath),
+		logArgs: { filePath },
+	});
 
-	window.webContents.send("file-parsed", {
-		filePath,
-		totalLines: parsed.totalLines,
-		firstLines: parsed.getLinesSync(0),
-		globalStyle: parsed.commonStyle,
-		requestedFromClient,
-	} satisfies FileParsedEvent);
+	const fileParsedEvent = runFnAndLogDuration({
+		name: "Create file parsed event",
+		fn: () =>
+			({
+				filePath,
+				totalLines: parsed.totalLines,
+				firstLines: parsed.getLinesSync(0),
+				globalStyle: parsed.commonStyle,
+				requestedFromClient,
+			}) satisfies FileParsedEvent,
+		logArgs: { filePath },
+	});
+	window.webContents.send("file-parsed", fileParsedEvent);
 
 	return filePath;
 }
@@ -148,19 +171,22 @@ ipcMain.handle("get-lines", async (event, fromLineNumber) => {
 	const parsed = ParsedFileState.getOpenedFileState(window);
 
 	if (!parsed) {
+		logger.warn("No file opened");
 		throw new Error("No file opened");
 	}
 
 	const currentNum = counter++;
-	console.time(`get lines ${currentNum}`);
-	const requestedLines = await parsed.getLines(fromLineNumber);
-	console.timeEnd(`get lines ${currentNum}`);
+
+	const requestedLines = await runFnAndLogDuration({
+		name: `get lines ${currentNum}`,
+		fn: () => parsed.getLines(fromLineNumber),
+	});
 
 	return requestedLines;
 });
 
 // setInterval(() => {
-//     console.log(
+//     logger.info(
 //         'Memory usage',
 //         Object.fromEntries(
 //             Object.entries(process.memoryUsage())

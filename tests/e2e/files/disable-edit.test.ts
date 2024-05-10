@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { openElectronApp } from '../utils/render';
 
 test.describe('Disable Edit E2E Tests', () => {
@@ -16,7 +16,10 @@ test.describe('Disable Edit E2E Tests', () => {
   });
 
   test('editing the file content is disabled', async () => {
-    await expect(page.locator('.ansiContainer')).toHaveAttribute('contenteditable', 'false');
+    await expect(page.locator('.ansiContainer')).toHaveAttribute(
+      'contenteditable',
+      'false',
+    );
   });
 
   test('paste does not work', async () => {

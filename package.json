@@ -1,65 +1,65 @@
 {
-	"name": "electron-ansi-viewer",
-	"productName": "electron-ansi-viewer",
-	"version": "1.0.0-pre.1",
-	"description": "My Electron application description",
-	"main": ".vite/build/main.js",
-	"scripts": {
-		"prepare": "husky",
-		"start": "electron-forge start",
-		"package": "electron-forge package",
-		"make": "electron-forge make",
-		"publish": "electron-forge publish",
-		"typecheck": "tsc --noEmit",
-		"lint": "npx @biomejs/biome check --apply .",
-		"test:e2e": "playwright test",
-		"test:e2e:headed": "playwright test --headed"
-	},
-	"keywords": [],
-	"author": {
-		"name": "Raz Luvaton",
-		"email": "16746759+rluvaton@users.noreply.github.com"
-	},
-	"lint-staged": {
-		"*": [
-			"biome check --apply --no-errors-on-unmatched --files-ignore-unknown=true"
-		]
-	},
-	"license": "MIT",
-	"devDependencies": {
-		"@biomejs/biome": "1.7.3",
-		"@electron-forge/cli": "^6.4.2",
-		"@electron-forge/maker-deb": "^6.4.2",
-		"@electron-forge/maker-rpm": "^6.4.2",
-		"@electron-forge/maker-squirrel": "^6.4.2",
-		"@electron-forge/maker-zip": "^6.4.2",
-		"@electron-forge/plugin-auto-unpack-natives": "^6.4.2",
-		"@electron-forge/plugin-vite": "^6.4.2",
-		"@playwright/test": "^1.44.0",
-		"@types/electron-squirrel-startup": "^1.0.2",
-		"@types/react": "^18.2.18",
-		"@types/react-dom": "^18.2.7",
-		"@types/react-window-infinite-loader": "^1.0.9",
-		"@vitejs/plugin-react": "^4.1.1",
-		"electron": "27.0.3",
-		"electron-playwright-helpers": "^1.7.1",
-		"lint-staged": "^15.2.2",
-		"playwright": "^1.44.0",
-		"ts-node": "^10.9.1",
-		"typescript": "^5.0.2"
-	},
-	"dependencies": {
-		"ansicolor": "^2.0.1",
-		"electron-log": "^5.1.4",
-		"electron-squirrel-startup": "^1.0.0",
-		"husky": "^9.0.11",
-		"mobx": "^6.10.2",
-		"mobx-react-lite": "^4.0.5",
-		"pretty-bytes": "^5.6.0",
-		"pretty-ms": "^9.0.0",
-		"react": "^18.2.0",
-		"react-dom": "^18.2.0",
-		"react-window": "^1.8.9",
-		"react-window-infinite-loader": "^1.0.9"
-	}
+  "name": "electron-ansi-viewer",
+  "productName": "electron-ansi-viewer",
+  "version": "1.0.0-pre.1",
+  "description": "My Electron application description",
+  "main": ".vite/build/main.js",
+  "scripts": {
+    "prepare": "husky",
+    "start": "electron-forge start",
+    "package": "electron-forge package",
+    "make": "electron-forge make",
+    "publish": "electron-forge publish",
+    "typecheck": "tsc --noEmit",
+    "lint": "npx @biomejs/biome check --apply .",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed"
+  },
+  "keywords": [],
+  "author": {
+    "name": "Raz Luvaton",
+    "email": "16746759+rluvaton@users.noreply.github.com"
+  },
+  "lint-staged": {
+    "*": [
+      "biome check --apply --no-errors-on-unmatched --files-ignore-unknown=true"
+    ]
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@biomejs/biome": "1.7.3",
+    "@electron-forge/cli": "^6.4.2",
+    "@electron-forge/maker-deb": "^6.4.2",
+    "@electron-forge/maker-rpm": "^6.4.2",
+    "@electron-forge/maker-squirrel": "^6.4.2",
+    "@electron-forge/maker-zip": "^6.4.2",
+    "@electron-forge/plugin-auto-unpack-natives": "^6.4.2",
+    "@electron-forge/plugin-vite": "^6.4.2",
+    "@playwright/test": "^1.44.0",
+    "@types/electron-squirrel-startup": "^1.0.2",
+    "@types/react": "^18.2.18",
+    "@types/react-dom": "^18.2.7",
+    "@types/react-window-infinite-loader": "^1.0.9",
+    "@vitejs/plugin-react": "^4.1.1",
+    "electron": "27.0.3",
+    "electron-playwright-helpers": "^1.7.1",
+    "lint-staged": "^15.2.2",
+    "playwright": "^1.44.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.0.2"
+  },
+  "dependencies": {
+    "ansicolor": "^2.0.1",
+    "electron-log": "^5.1.4",
+    "electron-squirrel-startup": "^1.0.0",
+    "husky": "^9.0.11",
+    "mobx": "^6.10.2",
+    "mobx-react-lite": "^4.0.5",
+    "pretty-bytes": "^5.6.0",
+    "pretty-ms": "^9.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-window": "^1.8.9",
+    "react-window-infinite-loader": "^1.0.9"
+  }
 }

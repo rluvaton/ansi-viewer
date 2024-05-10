@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { openElectronApp } from '../utils/render';
 
 test.describe('File Scrolling', () => {

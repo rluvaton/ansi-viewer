@@ -6,8 +6,14 @@ import { ElectronApplication, Page } from 'playwright-core';
  * This function opens the Electron app and returns a handle to the app and its main page.
  * It is designed to be used in e2e tests to initialize the app environment.
  */
-export async function setupE2ETestingEnvironment(): Promise<{ app: ElectronApplication; page: Page }> {
-  const electronApp = await electron.launch({ args: ['electron/main.js'], headless: true });
+export async function setupE2ETestingEnvironment(): Promise<{
+  app: ElectronApplication;
+  page: Page;
+}> {
+  const electronApp = await electron.launch({
+    args: ['electron/main.js'],
+    headless: true,
+  });
   const page = await electronApp.firstWindow();
   return { app: electronApp, page };
 }

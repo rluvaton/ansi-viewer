@@ -1,8 +1,9 @@
-import assert from "node:assert";
+import assert from 'node:assert';
 
-import { Line } from "../../shared-types";
-import { LINES_BLOCK_SIZE } from "../../shared/constants";
-import { LinesBlock } from "./lines-block";
+import { Line } from '../../shared-types';
+import { LINES_BLOCK_SIZE } from '../../shared/constants';
+import { logger } from '../logger';
+import { LinesBlock } from './lines-block';
 
 /**
  * This class is responsible for:
@@ -10,158 +11,158 @@ import { LinesBlock } from "./lines-block";
  * - Handle optimization like uncompressing next lines (TODO).
  */
 export class LinesBlockCoordinator {
-	// TODO - maybe use optimized data structure for this maybe
+  // TODO - maybe use optimized data structure for this maybe
 
-	/**
-	 * saved blocks
-	 *
-	 * this will have the previous block and the next block of the requested block also parsed so it will be faster to access
-	 *
-	 * To avoid saving references the same block multiple times we gonna have rounded down to the nearest block size multiplication
-	 */
-	#linesBlocks: LinesBlock[] = [];
+  /**
+   * saved blocks
+   *
+   * this will have the previous block and the next block of the requested block also parsed so it will be faster to access
+   *
+   * To avoid saving references the same block multiple times we gonna have rounded down to the nearest block size multiplication
+   */
+  #linesBlocks: LinesBlock[] = [];
 
-	#alreadyParsedBlocks: LinesBlock[] = [];
+  #alreadyParsedBlocks: LinesBlock[] = [];
 
-	currentlyNeededBlockIndexes = new Set<number>();
+  currentlyNeededBlockIndexes = new Set<number>();
 
-	#getLineNumberForLineMap(lineNumber: number) {
-		return Math.floor(lineNumber / LINES_BLOCK_SIZE);
-	}
+  #getLineNumberForLineMap(lineNumber: number) {
+    return Math.floor(lineNumber / LINES_BLOCK_SIZE);
+  }
 
-	#addBlock(block: LinesBlock) {
-		// the fromLine would already be rounded by the block size
-		this.#linesBlocks[this.#getLineNumberForLineMap(block.fromLine)] = block;
-	}
+  #addBlock(block: LinesBlock) {
+    // the fromLine would already be rounded by the block size
+    this.#linesBlocks[this.#getLineNumberForLineMap(block.fromLine)] = block;
+  }
 
-	async addBlock(fromLine: number, block: Line[]) {
-		assert(
-			block.length <= LINES_BLOCK_SIZE,
-			`Lines block must be of size ${LINES_BLOCK_SIZE} or less`,
-		);
-		const linesBlock = new LinesBlock(fromLine, fromLine + block.length);
-		this.#addBlock(linesBlock);
+  async addBlock(fromLine: number, block: Line[]) {
+    assert(
+      block.length <= LINES_BLOCK_SIZE,
+      `Lines block must be of size ${LINES_BLOCK_SIZE} or less`,
+    );
+    const linesBlock = new LinesBlock(fromLine, fromLine + block.length);
+    this.#addBlock(linesBlock);
 
-		await linesBlock.setLines(block);
-	}
+    await linesBlock.setLines(block);
+  }
 
-	getLinesForLineSync(lineNumber: number): Line[] | undefined {
-		const blockIndex = this.#getLineNumberForLineMap(lineNumber);
-		const block = this.#linesBlocks[blockIndex];
+  getLinesForLineSync(lineNumber: number): Line[] | undefined {
+    const blockIndex = this.#getLineNumberForLineMap(lineNumber);
+    const block = this.#linesBlocks[blockIndex];
 
-		if (!block) {
-			return;
-		}
+    if (!block) {
+      return;
+    }
 
-		this.currentlyNeededBlockIndexes.add(blockIndex);
+    this.currentlyNeededBlockIndexes.add(blockIndex);
 
-		const currentBlockParsedLines = block.parseLinesSync();
+    const currentBlockParsedLines = block.parseLinesSync();
 
-		this.#parsePossibleNextBlockInBackground(blockIndex);
-		return currentBlockParsedLines;
-	}
+    this.#parsePossibleNextBlockInBackground(blockIndex);
+    return currentBlockParsedLines;
+  }
 
-	async getLinesForLine(lineNumber: number): Promise<Line[] | undefined> {
-		const blockIndex = this.#getLineNumberForLineMap(lineNumber);
-		// Save 1
-		const block = this.#linesBlocks[blockIndex];
+  async getLinesForLine(lineNumber: number): Promise<Line[] | undefined> {
+    const blockIndex = this.#getLineNumberForLineMap(lineNumber);
+    // Save 1
+    const block = this.#linesBlocks[blockIndex];
 
-		if (!block) {
-			return;
-		}
+    if (!block) {
+      return;
+    }
 
-		this.currentlyNeededBlockIndexes.add(blockIndex);
+    this.currentlyNeededBlockIndexes.add(blockIndex);
 
-		const currentBlockParsedLines = await block.parseLines();
+    const currentBlockParsedLines = await block.parseLines();
 
-		this.#parsePossibleNextBlockInBackground(blockIndex);
+    this.#parsePossibleNextBlockInBackground(blockIndex);
 
-		return currentBlockParsedLines;
-	}
+    return currentBlockParsedLines;
+  }
 
-	#parsePossibleNextBlockInBackground(blockIndex: number) {
-		const block = this.#linesBlocks[blockIndex];
-		if (!block) {
-			// This should not happen as we already checked for this case
-			return;
-		}
+  #parsePossibleNextBlockInBackground(blockIndex: number) {
+    const block = this.#linesBlocks[blockIndex];
+    if (!block) {
+      // This should not happen as we already checked for this case
+      return;
+    }
 
-		this.#alreadyParsedBlocks.push(block);
+    this.#alreadyParsedBlocks.push(block);
 
-		let blockIndexesToGetReady: number[];
+    let blockIndexesToGetReady: number[];
 
-		// if the line is in the first block than load the next 2 blocks
-		if (blockIndex === 0) {
-			blockIndexesToGetReady = Array.from({ length: 9 }, (_, i) => i + 1);
-		} else if (blockIndex === this.#linesBlocks.length - 1) {
-			blockIndexesToGetReady = Array.from(
-				{ length: 9 },
-				(_, i) => blockIndex - i - 1,
-			);
-		} else {
-			blockIndexesToGetReady = [
-				blockIndex - 2,
-				blockIndex - 1,
-				...Array.from({ length: 7 }, (_, i) => blockIndex + i + 1),
-			];
-		}
+    // if the line is in the first block than load the next 2 blocks
+    if (blockIndex === 0) {
+      blockIndexesToGetReady = Array.from({ length: 9 }, (_, i) => i + 1);
+    } else if (blockIndex === this.#linesBlocks.length - 1) {
+      blockIndexesToGetReady = Array.from(
+        { length: 9 },
+        (_, i) => blockIndex - i - 1,
+      );
+    } else {
+      blockIndexesToGetReady = [
+        blockIndex - 2,
+        blockIndex - 1,
+        ...Array.from({ length: 7 }, (_, i) => blockIndex + i + 1),
+      ];
+    }
 
-		blockIndexesToGetReady = blockIndexesToGetReady.filter(
-			(index) =>
-				index > 0 &&
-				index < this.#linesBlocks.length - 1 &&
-				this.#linesBlocks[index]?.isParsed === false,
-		);
+    blockIndexesToGetReady = blockIndexesToGetReady.filter(
+      (index) =>
+        index > 0 &&
+        index < this.#linesBlocks.length - 1 &&
+        this.#linesBlocks[index]?.isParsed === false,
+    );
 
-		this.currentlyNeededBlockIndexes.clear();
+    this.currentlyNeededBlockIndexes.clear();
 
-		this.currentlyNeededBlockIndexes.add(blockIndex);
-		blockIndexesToGetReady.forEach((index) =>
-			this.currentlyNeededBlockIndexes.add(index),
-		);
+    this.currentlyNeededBlockIndexes.add(blockIndex);
+    blockIndexesToGetReady.forEach((index) =>
+      this.currentlyNeededBlockIndexes.add(index),
+    );
 
-		if (blockIndexesToGetReady.length) {
-			// TODO - Allow to stop the parsing if the user scrolled to a different block
-			// Avoid parsing if scrolling fast
-			setTimeout(async () => {
-				try {
-					const parsedBlocks = await Promise.all(
-						blockIndexesToGetReady
-							.filter((index) => this.currentlyNeededBlockIndexes.has(index))
-							.map(async (index) => {
-								const block = this.#linesBlocks[index];
+    if (blockIndexesToGetReady.length) {
+      // TODO - Allow to stop the parsing if the user scrolled to a different block
+      // Avoid parsing if scrolling fast
+      setTimeout(async () => {
+        try {
+          const parsedBlocks = await Promise.all(
+            blockIndexesToGetReady
+              .filter((index) => this.currentlyNeededBlockIndexes.has(index))
+              .map(async (index) => {
+                const block = this.#linesBlocks[index];
 
-								await block.parseLines();
+                await block.parseLines();
 
-								return block;
-							}),
-					);
+                return block;
+              }),
+          );
 
-					this.#alreadyParsedBlocks.push(...parsedBlocks);
-				} catch (e) {
-					console.error("failed parsing next blocks", e);
-				}
-			}, 0);
-		}
+          this.#alreadyParsedBlocks.push(...parsedBlocks);
+        } catch (e) {
+          logger.error('failed parsing next blocks', e);
+        }
+      }, 0);
+    }
 
-		const parsedBlockToClear = this.#alreadyParsedBlocks.filter(
-			(block) => !this.currentlyNeededBlockIndexes.has(block.fromLine),
-		);
-		parsedBlockToClear.forEach((block) => block.clearParsedLines());
-		this.#alreadyParsedBlocks = this.#alreadyParsedBlocks.filter((block) =>
-			this.currentlyNeededBlockIndexes.has(block.fromLine),
-		);
-	}
+    const parsedBlockToClear = this.#alreadyParsedBlocks.filter(
+      (block) => !this.currentlyNeededBlockIndexes.has(block.fromLine),
+    );
+    parsedBlockToClear.forEach((block) => block.clearParsedLines());
+    this.#alreadyParsedBlocks = this.#alreadyParsedBlocks.filter((block) =>
+      this.currentlyNeededBlockIndexes.has(block.fromLine),
+    );
+  }
 
-	get totalLines() {
-		const countWithoutLastBlock =
-			(this.#linesBlocks.length - 1) * LINES_BLOCK_SIZE;
+  get totalLines() {
+    const countWithoutLastBlock =
+      (this.#linesBlocks.length - 1) * LINES_BLOCK_SIZE;
 
-		const lastBlock = this.#linesBlocks[this.#linesBlocks.length - 1];
+    const lastBlock = this.#linesBlocks[this.#linesBlocks.length - 1];
 
-		return (
-			countWithoutLastBlock +
-			(lastBlock ? lastBlock.toLine - lastBlock.fromLine : 0)
-		);
-	}
+    return (
+      countWithoutLastBlock +
+      (lastBlock ? lastBlock.toLine - lastBlock.fromLine : 0)
+    );
+  }
 }

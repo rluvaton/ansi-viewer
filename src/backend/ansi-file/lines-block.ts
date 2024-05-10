@@ -1,94 +1,94 @@
-import { promisify } from "node:util";
-import * as zlib from "node:zlib";
-import { Line } from "../../shared-types";
-import { LINES_BLOCK_SIZE } from "../../shared/constants";
+import { promisify } from 'node:util';
+import * as zlib from 'node:zlib';
+import { Line } from '../../shared-types';
+import { LINES_BLOCK_SIZE } from '../../shared/constants';
 
 const unzip = promisify(zlib.unzip);
 const gzip = promisify(zlib.gzip);
 
 export class LinesBlock {
-	readonly index: number;
-	/**
-	 * Included
-	 */
-	readonly fromLine: number;
+  readonly index: number;
+  /**
+   * Included
+   */
+  readonly fromLine: number;
 
-	/**
-	 * Excluded
-	 */
-	readonly toLine: number;
+  /**
+   * Excluded
+   */
+  readonly toLine: number;
 
-	ready = false;
+  ready = false;
 
-	/**
-	 * Compressed lines
-	 */
-	lines: Buffer;
+  /**
+   * Compressed lines
+   */
+  lines: Buffer;
 
-	parsedLines: Line[] | undefined;
+  parsedLines: Line[] | undefined;
 
-	isParsed = false;
+  isParsed = false;
 
-	constructor(fromLine: number, toLine: number, lines?: Line[]) {
-		this.index = Math.floor(fromLine / LINES_BLOCK_SIZE);
-		this.fromLine = fromLine;
-		this.toLine = toLine;
-		this.lines = lines ? LinesBlock.#compressLinesSync(lines) : Buffer.from("");
-		this.ready = !!lines;
-	}
+  constructor(fromLine: number, toLine: number, lines?: Line[]) {
+    this.index = Math.floor(fromLine / LINES_BLOCK_SIZE);
+    this.fromLine = fromLine;
+    this.toLine = toLine;
+    this.lines = lines ? LinesBlock.#compressLinesSync(lines) : Buffer.from('');
+    this.ready = !!lines;
+  }
 
-	async setLines(lines: Line[]) {
-		this.lines = await LinesBlock.#compressLines(lines);
-		this.ready = true;
-	}
+  async setLines(lines: Line[]) {
+    this.lines = await LinesBlock.#compressLines(lines);
+    this.ready = true;
+  }
 
-	parseLinesSync() {
-		if (this.parsedLines) {
-			return this.parsedLines;
-		}
+  parseLinesSync() {
+    if (this.parsedLines) {
+      return this.parsedLines;
+    }
 
-		// TODO - should not do this if the lines are current parsing
-		this.parsedLines = LinesBlock.#decompressLinesSync(this.lines);
+    // TODO - should not do this if the lines are current parsing
+    this.parsedLines = LinesBlock.#decompressLinesSync(this.lines);
 
-		this.isParsed = true;
-		return this.parsedLines;
-	}
+    this.isParsed = true;
+    return this.parsedLines;
+  }
 
-	async parseLines() {
-		if (this.parsedLines) {
-			return this.parsedLines;
-		}
+  async parseLines() {
+    if (this.parsedLines) {
+      return this.parsedLines;
+    }
 
-		this.parsedLines = await LinesBlock.#decompressLines(this.lines);
+    this.parsedLines = await LinesBlock.#decompressLines(this.lines);
 
-		this.isParsed = true;
-		return this.parsedLines;
-	}
+    this.isParsed = true;
+    return this.parsedLines;
+  }
 
-	clearParsedLines() {
-		this.isParsed = false;
-		this.parsedLines = undefined;
-	}
+  clearParsedLines() {
+    this.isParsed = false;
+    this.parsedLines = undefined;
+  }
 
-	static #compressLinesSync(lines: Line[]): Buffer {
-		const str = JSON.stringify(lines);
+  static #compressLinesSync(lines: Line[]): Buffer {
+    const str = JSON.stringify(lines);
 
-		return zlib.gzipSync(str);
-	}
+    return zlib.gzipSync(str);
+  }
 
-	static async #compressLines(lines: Line[]): Promise<Buffer> {
-		const str = JSON.stringify(lines);
+  static async #compressLines(lines: Line[]): Promise<Buffer> {
+    const str = JSON.stringify(lines);
 
-		// TODO - maybe allow to abort
-		return await gzip(str);
-	}
+    // TODO - maybe allow to abort
+    return await gzip(str);
+  }
 
-	static #decompressLinesSync(compressedLines: Buffer): Line[] {
-		return JSON.parse(zlib.unzipSync(compressedLines).toString());
-	}
+  static #decompressLinesSync(compressedLines: Buffer): Line[] {
+    return JSON.parse(zlib.unzipSync(compressedLines).toString());
+  }
 
-	static async #decompressLines(compressedLines: Buffer): Promise<Line[]> {
-		// TODO - allow to abort
-		return JSON.parse((await unzip(compressedLines)).toString());
-	}
+  static async #decompressLines(compressedLines: Buffer): Promise<Line[]> {
+    // TODO - allow to abort
+    return JSON.parse((await unzip(compressedLines)).toString());
+  }
 }

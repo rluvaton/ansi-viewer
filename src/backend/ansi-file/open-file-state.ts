@@ -243,7 +243,7 @@ function buildHtmlForItems(lineIndex: number, items: LineItem[]): Line {
     lineIndex,
     __html: `<code contenteditable="false" class="line-number noselect">${
       lineIndex + 1
-    }</code><pre contenteditable="true" spellcheck="false" data-disable-content-edit data-line="${
+    }</code><pre role="presentation" contenteditable="true" spellcheck="false" data-disable-content-edit data-line="${
       lineIndex + 1
     }" class="strip-content-editable-style">${items
       .map(

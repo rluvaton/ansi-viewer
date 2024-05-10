@@ -12,8 +12,8 @@
 		"publish": "electron-forge publish",
 		"typecheck": "tsc --noEmit",
 		"lint": "npx @biomejs/biome check --apply .",
-		"test:e2e": "playwright test --project=chromium",
-		"test:e2e:headed": "playwright test --headed --project=chromium"
+		"test:e2e": "playwright test",
+		"test:e2e:headed": "playwright test --headed"
 	},
 	"keywords": [],
 	"author": {

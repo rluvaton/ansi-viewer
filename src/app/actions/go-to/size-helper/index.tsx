@@ -27,8 +27,8 @@ function GoToActionSizeHelperComp() {
 			}
 
 			getContainer().goToActionStore.saveTextSizeMetadata({
-				charSizeInPx: contentRef.current!.getBoundingClientRect().width,
-				prefixSizeInPx: lineNumberRef.current!.getBoundingClientRect().width,
+				charSizeInPx: contentRef.current?.getBoundingClientRect().width,
+				prefixSizeInPx: lineNumberRef.current?.getBoundingClientRect().width,
 			});
 		}
 

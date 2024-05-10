@@ -121,7 +121,7 @@ export class CurrentFileStore {
 					valuesOutOfOrder[0].index === currentChunkIndex + 1
 				) {
 					currentChunkIndex++;
-					values.push(valuesOutOfOrder.shift()!.value);
+					values.push(valuesOutOfOrder.shift()?.value);
 				}
 
 				// TODO - handle errors and back-pressure

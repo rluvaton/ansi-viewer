@@ -162,7 +162,7 @@ function onHome(e: KeyboardEvent) {
 	// TODO - what about many updates at really close at time
 }
 
-function isAlreadyStartOfTheLine(e: KeyboardEvent, range: Range) {
+function isAlreadyStartOfTheLine(_e: KeyboardEvent, range: Range) {
 	if (range.endOffset > 0) {
 		return false;
 	}
@@ -223,7 +223,7 @@ function onArrowLeft(e: KeyboardEvent) {
 	document.getSelection().setPosition(prevLine, 0);
 }
 
-function shouldJumpToEndOfPreviousLine(e: KeyboardEvent, range: Range) {
+function shouldJumpToEndOfPreviousLine(_e: KeyboardEvent, range: Range) {
 	// TODO - add support for jumping words keyboard shortcut and go to the start of the line or start of the page
 	// Not reached the start of the line
 	if (range.endOffset > 0) {
@@ -284,7 +284,7 @@ function onArrowRight(e: KeyboardEvent) {
 	document.getSelection().setPosition(nextLine, 0);
 }
 
-function shouldJumpToStartOfNextLine(e: KeyboardEvent, range: Range) {
+function shouldJumpToStartOfNextLine(_e: KeyboardEvent, range: Range) {
 	let endContainer = range.endContainer as Element;
 
 	if (endContainer.nodeName === "#text") {

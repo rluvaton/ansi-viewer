@@ -18,7 +18,7 @@ export class GoToActionStore {
 
 	// TODO - implement
 	currentCursorLocation = "";
-	listRef: React.RefObject<HTMLElement>;
+	listRef: React.RefObject<HTMLDivElement>;
 
 	prefixSizeInPx = 20;
 	charSizeInPx = 8;
@@ -42,7 +42,7 @@ export class GoToActionStore {
 		this.charSizeInPx = metadata.charSizeInPx;
 	}
 
-	registerList(ref: React.RefObject<HTMLElement>) {
+	registerList(ref: React.RefObject<HTMLDivElement>) {
 		this.listRef = ref;
 	}
 
@@ -128,7 +128,7 @@ export class GoToActionStore {
 			x = this.prefixSizeInPx + column * this.charSizeInPx;
 		}
 
-		this.listRef!.current!.scrollTo({
+		this.listRef?.current?.scrollTo({
 			top: y,
 			left: x,
 		});
@@ -136,7 +136,7 @@ export class GoToActionStore {
 		// TODO - set caret position
 		// TODO - set focus so can set caret position
 		// https://gist.github.com/imolorhe/b6ec41233cf7756eeacbb1e38cd42856
-		setCaretPosition(this.listRef!.current!, lineNumber, column);
+		setCaretPosition(this.listRef?.current!, lineNumber, column);
 	}
 
 	openGoTo() {

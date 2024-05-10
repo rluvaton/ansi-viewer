@@ -11,7 +11,7 @@ function App() {
 		getContainer();
 
 	useEffect(() => {
-		function onFileSelected(electronEvent: unknown, event: FileParsedEvent) {
+		function onFileSelected(_electronEvent: unknown, event: FileParsedEvent) {
 			// Ignore events that were triggered by the client to avoid duplicate parsing
 			if (event.requestedFromClient) {
 				return;

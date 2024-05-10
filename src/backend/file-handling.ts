@@ -68,7 +68,10 @@ async function assertFileAccessible(filePath: string) {
 	try {
 		await fs.access(filePath, fs.constants.R_OK);
 	} catch (e) {
-		throw new Error("Access denied");
+		if (e.code === "EACCES") {
+			throw new Error("Access denied");
+		}
+		throw e;
 	}
 }
 

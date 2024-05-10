@@ -11,7 +11,7 @@ import s from "./index.module.css";
 
 function LargeAnsiFileViewerComp() {
 	const contentRef = useRef<HTMLDivElement>(null);
-	const outerRef = useRef<HTMLElement>(null);
+	const outerRef = useRef<HTMLDivElement>(null);
 
 	const { currentFileStore, currentInstanceStore, goToActionStore } =
 		getContainer();

@@ -101,6 +101,7 @@ function LineCode({ index, style }: ListChildComponentProps) {
       key={index}
       style={style}
       className={`${s.line} ansi-line`}
+      data-outer-line={index + 1}
       // TODO - line numbers should be fixed
       dangerouslySetInnerHTML={lineContent}
     ></div>

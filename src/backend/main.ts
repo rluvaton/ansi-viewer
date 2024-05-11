@@ -33,8 +33,10 @@ const createWindow = () => {
     },
   });
 
-  // Open the DevTools.
-  mainWindow.webContents.openDevTools();
+  // Open the DevTools by default for development
+  if (process.env.NODE_ENV === 'development') {
+    mainWindow.webContents.openDevTools();
+  }
 
   // and load the index.html of the app.
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {

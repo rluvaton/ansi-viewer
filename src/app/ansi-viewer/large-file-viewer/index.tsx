@@ -5,6 +5,7 @@ import InfiniteLoader from 'react-window-infinite-loader';
 import { LINES_BLOCK_SIZE } from '../../../shared/constants';
 import { getContainer } from '../../stores/stores-container';
 
+import { setCaretPosition } from '../../services/keyboard-navigation-in-file';
 import { DocumentContent } from './document-content';
 
 function LargeAnsiFileViewerComp() {
@@ -21,6 +22,16 @@ function LargeAnsiFileViewerComp() {
   }
 
   const numberOfLines = currentFileStore.totalLines;
+
+  useEffect(() => {
+    if (getContainer().currentFileStore.totalLines === 0) {
+      return;
+    }
+
+    // Set caret to the start of the file so can copy
+    // and not using focus as it will put it on the line number and not the text
+    setCaretPosition(contentRef.current, 1, 0);
+  }, []);
 
   return (
     <div

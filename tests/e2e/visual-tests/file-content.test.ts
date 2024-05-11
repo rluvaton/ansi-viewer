@@ -1,7 +1,13 @@
 import { expect, test } from '@playwright/test';
+import styles from 'ansi-styles';
+import chalk from 'chalk';
+
 import { createFixtureFile } from '../utils/fixtures';
 import { openElectronApp } from '../utils/render';
-import { waitForLineToLoad } from '../utils/wait-helpers';
+import {
+  waitForLineNumberToLoad,
+  waitForLineToLoad,
+} from '../utils/wait-helpers';
 
 test.describe('Visual testing - File Content', () => {
   test('should display line numbers matching the text correctly', async () => {
@@ -51,5 +57,44 @@ test.describe('Visual testing - File Content', () => {
     await expect(page).toHaveScreenshot(
       'file-content-without-color-matching-line-number.png',
     );
+  });
+
+  test('should display the color and format correctly', async () => {
+    // Taken from https://github.com/chalk/chalk/blob/386909ee0bfe4346d04e3eeba712f0db597c038d/examples/screenshot.js
+    let text = '';
+    for (const key of Object.keys(styles)) {
+      let returnValue = key;
+
+      // We skip `overline` as almost no terminal supports it so we cannot show it off.
+      if (
+        key === 'reset' ||
+        key === 'hidden' ||
+        key === 'grey' ||
+        key === 'bgGray' ||
+        key === 'bgGrey' ||
+        key === 'overline' ||
+        key.endsWith('Bright')
+      ) {
+        continue;
+      }
+
+      if (/^bg[^B]/.test(key)) {
+        returnValue = chalk.black(returnValue);
+      }
+
+      // @ts-expect-error
+      text += chalk[key](returnValue) + '\n';
+    }
+    const { filePath } = await createFixtureFile({
+      content: text,
+    });
+
+    const { page } = await openElectronApp({
+      filePath,
+    });
+
+    await waitForLineNumberToLoad(page, 1);
+
+    await expect(page).toHaveScreenshot('file-format.png');
   });
 });

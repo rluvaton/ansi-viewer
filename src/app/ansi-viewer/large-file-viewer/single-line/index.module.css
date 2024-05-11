@@ -1,0 +1,23 @@
+
+/* nowrap exists, even though WebStorm says it doesn't: https://developer.mozilla.org/en-US/docs/Web/CSS/text-wrap#nowrap '*/
+/*noinspection ALL*/
+.line {
+    text-wrap: nowrap;
+}
+
+.line :global(.line-number) {
+    text-align: right;
+    margin-right: 10px;
+    margin-left: 10px;
+    color: #999;
+    font-size: 12px;
+    font-family: monospace;
+}
+
+.line pre {
+    display: inline;
+    margin: 0;
+
+    /* This is the same value as LINE_HEIGHT, make sure to keep it sync with this */
+    line-height: 22px;
+}

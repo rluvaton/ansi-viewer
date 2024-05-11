@@ -13,7 +13,7 @@ interface GetAllLinesOptions {
   numberOfLines?: number;
 }
 
-export async function waitForLineToLoad(page: Page, lineNumber: number = 1) {
+async function waitForLineNumberToLoad(page: Page, lineNumber: number = 1) {
   await page.waitForFunction(
     (lineNumber) => {
       const line = document.querySelector(
@@ -32,7 +32,7 @@ export async function getAllVisibleLines(
   page: Page,
   options: GetAllVisibleLinesOptions = {},
 ) {
-  await waitForLineToLoad(page);
+  await waitForLineNumberToLoad(page);
   // await page.waitForTimeout(100);
   let lines = await page.$$('[data-line][role="presentation"]');
 
@@ -81,7 +81,7 @@ export async function getAllLinesContent(
   let prevSize: number;
 
   await page.waitForTimeout(100);
-  await waitForLineToLoad(page);
+  await waitForLineNumberToLoad(page);
   const pageSize = await page.evaluate(() => window.innerHeight);
   // TODO - fix page size is 0 sometimes
   const scrollY = pageSize === 0 ? 100 : Math.trunc((pageSize * 9) / 10);
@@ -103,7 +103,7 @@ export async function getAllLinesContent(
     if (allLines.length === prevSize) {
       // TODO - find
       try {
-        await waitForLineToLoad(page, allLines.length + 1);
+        await waitForLineNumberToLoad(page, allLines.length + 1);
       } catch (e) {
         // Reached end?
         break;

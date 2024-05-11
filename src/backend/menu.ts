@@ -13,6 +13,12 @@ export function setupMainMenu() {
         { role: 'hide' },
         { role: 'hideOthers' },
         { role: 'unhide' },
+        {
+          label: 'Open DevTools',
+          click(_, browser) {
+            browser.webContents.openDevTools();
+          },
+        },
         { type: 'separator' },
         {
           label: 'Refresh',

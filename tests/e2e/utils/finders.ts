@@ -1,7 +1,7 @@
-import { expect } from '@playwright/test';
 import { Page } from 'playwright';
 import { ElementHandle } from 'playwright-core';
 import { scroll } from './core';
+import { waitForLineNumberToLoad } from './wait-helpers';
 
 interface GetAllVisibleLinesOptions {
   sortByLines?: boolean;
@@ -13,26 +13,13 @@ interface GetAllLinesOptions {
   numberOfLines?: number;
 }
 
-async function waitForLineNumberToLoad(page: Page, lineNumber: number = 1) {
-  await page.waitForFunction(
-    (lineNumber) => {
-      const line = document.querySelector(
-        `[data-line="${lineNumber}"][role="presentation"]`,
-      );
-      return !!line;
-    },
-    lineNumber,
-    {
-      timeout: 1000,
-    },
-  );
-}
-
 export async function getAllVisibleLines(
   page: Page,
   options: GetAllVisibleLinesOptions = {},
 ) {
-  await waitForLineNumberToLoad(page);
+  await waitForLineNumberToLoad(page, 1, {
+    timeout: 1000,
+  });
   // await page.waitForTimeout(100);
   let lines = await page.$$('[data-line][role="presentation"]');
 
@@ -81,7 +68,9 @@ export async function getAllLinesContent(
   let prevSize: number;
 
   await page.waitForTimeout(100);
-  await waitForLineNumberToLoad(page);
+  await waitForLineNumberToLoad(page, 1, {
+    timeout: 1000,
+  });
   const pageSize = await page.evaluate(() => window.innerHeight);
   // TODO - fix page size is 0 sometimes
   const scrollY = pageSize === 0 ? 100 : Math.trunc((pageSize * 9) / 10);
@@ -103,7 +92,9 @@ export async function getAllLinesContent(
     if (allLines.length === prevSize) {
       // TODO - find
       try {
-        await waitForLineNumberToLoad(page, allLines.length + 1);
+        await waitForLineNumberToLoad(page, allLines.length + 1, {
+          timeout: 1000,
+        });
       } catch (e) {
         // Reached end?
         break;

@@ -3,6 +3,7 @@ import assert from 'node:assert';
 import fs from 'node:fs/promises';
 import { Line, SearchLocation, SearchResult } from '../../shared-types';
 import { LINES_BLOCK_SIZE } from '../../shared/constants';
+import { logger } from '../logger';
 import { LinesBlock } from './lines-block';
 
 /**
@@ -142,7 +143,7 @@ export class LinesBlockCoordinator {
 
           this.#alreadyParsedBlocks.push(...parsedBlocks);
         } catch (e) {
-          console.error('failed parsing next blocks', e);
+          logger.error('failed parsing next blocks', e);
         }
       }, 0);
     }
@@ -177,6 +178,8 @@ export class LinesBlockCoordinator {
     // TODO - fix this
     // eslint-disable-next-line no-control-regex
     const fileContentWithoutAnsiCodes = fileContent.replace(
+      // TODO - remove this
+      // biome-ignore lint/suspicious/noControlCharactersInRegex: <explanation>
       /\u001b[^m]*?m/g,
       '',
     );

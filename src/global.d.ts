@@ -1,8 +1,10 @@
 import {
+  EmptyCallbackFunction,
   FileParsedEvent,
   Line,
   ListenToFileChunk,
   OnFileSelectedCallback,
+  OnOpenGoToCallback,
   SearchLocation,
   SearchResult,
 } from './shared-types';
@@ -31,6 +33,12 @@ declare global {
       ): void;
       startReadingFile(filePathToRead: string): void;
       getLines(fromLine: number): Promise<Line[]>;
+
+      onOpenGoTo(cb: OnOpenGoToCallback): void;
+      offOpenGoTo(cb: OnOpenGoToCallback): void;
+
+      onHighlightCaretPosition(cb: EmptyCallbackFunction): void;
+      offHighlightCaretPosition(cb: EmptyCallbackFunction): void;
 
       // --- Search related ---
       searchInFile(search: string): Promise<SearchResult[]>;

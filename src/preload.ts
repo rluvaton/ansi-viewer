@@ -3,10 +3,11 @@
 
 import { contextBridge, ipcRenderer } from 'electron';
 import {
+  EmptyCallbackFunction,
   FileParsedEvent,
   Line,
   OnFileSelectedCallback,
-  SearchLocation,
+  OnOpenGoToCallback,
   SearchResult,
 } from './shared-types';
 
@@ -44,6 +45,14 @@ contextBridge.exposeInMainWorld('electron', {
   // listenToFileChunks: (filePathToRead: string, cb: ListenToFileChunk) => ipcRenderer.on(`read-file-stream-${filePathToRead}`, cb),
   // cleanupFileChunkListener: (filePathToRead: string, cb: ListenToFileChunk) => ipcRenderer.off(`read-file-stream-${filePathToRead}`, cb),
   // startReadingFile: (filePathToRead: string) => ipcRenderer.send('read-file-stream', filePathToRead),
+
+  // From menu bar or keyboard shortcut
+  onOpenGoTo: (cb: OnOpenGoToCallback) => ipcRenderer.on('open-go-to', cb),
+  offOpenGoTo: (cb: OnOpenGoToCallback) => ipcRenderer.off('open-go-to', cb),
+  onHighlightCaretPosition: (cb: EmptyCallbackFunction) =>
+    ipcRenderer.on('highlight-caret-position', cb),
+  offHighlightCaretPosition: (cb: EmptyCallbackFunction) =>
+    ipcRenderer.off('highlight-caret-position', cb),
 
   // --- Search related ---
   searchInFile: (search: string): Promise<SearchResult[]> =>

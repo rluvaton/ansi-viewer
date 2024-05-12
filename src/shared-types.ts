@@ -11,6 +11,7 @@ export interface FileParsedEvent {
 export interface LineItem {
   className: string;
   text: string;
+  lineLength: number;
 }
 
 export type Line = {
@@ -18,16 +19,6 @@ export type Line = {
   __html: string;
   lineLength: number;
 };
-
-export type ListenToFileChunk = (
-  event: IpcRendererEvent,
-  chunkIndex: number,
-  chunk: string,
-) => void;
-export type OnFileSelectedCallback = (
-  electronEvent: IpcRendererEvent,
-  event: FileParsedEvent | undefined,
-) => void;
 
 export type SearchLocation = {
   line: number;
@@ -40,3 +31,15 @@ export type SearchResult = {
   start: SearchLocation;
   end: SearchLocation;
 };
+
+export type ListenToFileChunk = (
+  event: IpcRendererEvent,
+  chunkIndex: number,
+  chunk: string,
+) => void;
+export type OnFileSelectedCallback = (
+  electronEvent: IpcRendererEvent,
+  event: FileParsedEvent | undefined,
+) => void;
+export type EmptyCallbackFunction = () => void;
+export type OnOpenGoToCallback = EmptyCallbackFunction;

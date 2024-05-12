@@ -2,6 +2,8 @@ import { observer } from 'mobx-react-lite';
 import React from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
+import { GoToActionSizeHelper, GoToPopUp } from '../../actions';
+import { CaretPositionPageMask } from '../../actions/highlight-caret-position';
 import { getContainer } from '../../stores/stores-container';
 import { LargeAnsiFileViewer } from '../large-file-viewer';
 import { useCopyANSI } from './use-copy-ansi';
@@ -28,6 +30,15 @@ function AnsiViewerPageComp() {
 
   return (
     <div ref={containerRef}>
+      <GoToActionSizeHelper
+        key={'go-to-action-size-helper-' + currentInstanceStore.refreshKey}
+      />
+      <CaretPositionPageMask
+        key={'caret-position-mask-' + currentInstanceStore.refreshKey}
+      />
+
+      <GoToPopUp key={'go-to-popup-' + currentInstanceStore.refreshKey} />
+
       {/*TODO - support new lines*/}
       {/*TODO - support go to next and prev results*/}
       <div className={styles.searchContainer}>
@@ -38,7 +49,6 @@ function AnsiViewerPageComp() {
       </div>
 
       {/*TODO - highlight search locations*/}
-
       <LargeAnsiFileViewer
         key={'large-viewer-' + currentInstanceStore.refreshKey}
       />

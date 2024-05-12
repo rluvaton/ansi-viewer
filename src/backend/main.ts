@@ -3,19 +3,24 @@ import 'source-map-support/register';
 import { BrowserWindow, app, ipcMain } from 'electron';
 
 import * as path from 'node:path';
+import { parseArgs } from 'node:util';
 import { setupMainMenu } from './menu';
 
 // Setup
 import './file-handling';
 import { OpenedFileState } from './ansi-file/open-file-state';
 import { ParsedFileState } from './ansi-file/parsed-ansi-file';
+import { openFilePath } from './file-handling';
 import { getWindowFromEvent } from './helper';
+import { logger, setLogDest } from './logger';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
   app.quit();
 }
 
+// Log a message
+logger.info('log message');
 let mainWindow: BrowserWindow;
 
 const createWindow = () => {
@@ -30,8 +35,10 @@ const createWindow = () => {
     },
   });
 
-  // Open the DevTools.
-  mainWindow.webContents.openDevTools();
+  // Open the DevTools by default for development
+  if (process.env.NODE_ENV === 'development') {
+    mainWindow.webContents.openDevTools();
+  }
 
   // and load the index.html of the app.
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
@@ -42,6 +49,31 @@ const createWindow = () => {
     );
   }
 };
+
+// TODO - move to different file
+let {
+  values: { file: filePathFromArgs, 'log-dest': logDest },
+} = parseArgs({
+  options: {
+    file: {
+      type: 'string',
+      short: 'f',
+    },
+    'log-dest': {
+      type: 'string',
+      default: 'stdout',
+    },
+  },
+  strict: false,
+});
+
+setLogDest(logDest as string);
+
+if (filePathFromArgs) {
+  if (!path.isAbsolute(filePathFromArgs)) {
+    filePathFromArgs = path.join(process.cwd(), filePathFromArgs);
+  }
+}
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
@@ -71,9 +103,28 @@ ipcMain.on('get-window-id', (event) => {
 
 ipcMain.on('window-initialized', (event) => {
   const window = getWindowFromEvent(event);
+  logger.info('window initialized', { windowId: window.id });
   process.nextTick(() => {
     OpenedFileState.abortParsing(window);
     ParsedFileState.removeStateForWindow(window);
+
+    if (filePathFromArgs) {
+      // TODO - fix casting
+      const filePathToOpen = filePathFromArgs as string;
+      filePathFromArgs = undefined;
+
+      logger.info('opening file from args', filePathToOpen);
+
+      openFilePath({
+        window,
+        requestedFromClient: false,
+        filePath: filePathToOpen,
+      }).catch((e) => {
+        logger.error(`failed to open file ${filePathToOpen}`, e);
+      });
+    } else {
+      logger.info('no file to open from args', process.argv);
+    }
   });
   event.returnValue = undefined;
 });

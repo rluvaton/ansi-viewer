@@ -9,6 +9,6 @@ export default defineConfig({
   },
   build: {
     // So debugging can be easier
-    sourcemap: true
-  }
+    sourcemap: true,
+  },
 });

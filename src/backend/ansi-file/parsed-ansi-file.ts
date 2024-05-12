@@ -80,18 +80,22 @@ export class ParsedFileState {
   }
 
   getLinesSync(fromLine: number) {
+    if (this.#blockCoordinator.hasLineNumber(fromLine)) {
+      return this.#blockCoordinator.getLinesForLineSync(fromLine);
+    }
+
     if (this.isInIntro) {
       return this.#introBlockCoordinator.getLinesForLineSync(fromLine);
-    } else {
-      return this.#blockCoordinator.getLinesForLineSync(fromLine);
     }
   }
 
   getLines(fromLine: number): Promise<Line[]> {
+    if (this.#blockCoordinator.hasLineNumber(fromLine)) {
+      return this.#blockCoordinator.getLinesForLine(fromLine);
+    }
+
     if (this.isInIntro) {
       return this.#introBlockCoordinator.getLinesForLine(fromLine);
-    } else {
-      return this.#blockCoordinator.getLinesForLine(fromLine);
     }
   }
 

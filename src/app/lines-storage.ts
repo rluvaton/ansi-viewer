@@ -82,6 +82,9 @@ export class LinesStorage {
 
   addBlocks(blocks: Line[][]) {
     for (const block of blocks) {
+      if (!block) {
+        continue;
+      }
       this.addLines(block);
     }
   }

@@ -274,6 +274,13 @@ pre.${className} {
         .forEach(
           async (block: Line[]) => {
             await parsedAnsiFile.addBlock(block, createIntro);
+            // if (!createIntro) {
+            //   console.log(
+            //     `Block loaded from line ${block[0].lineIndex} to ${
+            //       block[block.length - 1].lineIndex
+            //     }`,
+            //   );
+            // }
 
             if (createIntro) {
               blocksLoaded++;

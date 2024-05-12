@@ -62,6 +62,11 @@ export class LinesBlockCoordinator {
     return currentBlockParsedLines;
   }
 
+  hasLineNumber(lineNumber: number): boolean {
+    const blockIndex = this.#getLineNumberForLineMap(lineNumber);
+    return !!this.#linesBlocks[blockIndex];
+  }
+
   async getLinesForLine(lineNumber: number): Promise<Line[] | undefined> {
     const blockIndex = this.#getLineNumberForLineMap(lineNumber);
     // Save 1

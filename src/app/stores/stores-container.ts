@@ -3,6 +3,7 @@ import { CurrentFileStore } from './current-file-store';
 import { CurrentInstanceStore } from './current-instance-store';
 import { FileSelectorStore } from './file-selector-store';
 import { GoToActionStore } from './go-to-action-store';
+import { SearchActionStore } from './search-action-store';
 
 class StoreContainer {
   static #instance?: StoreContainer;
@@ -13,6 +14,7 @@ class StoreContainer {
   private _currentInstanceStore: CurrentInstanceStore;
   private _goToActionStore: GoToActionStore;
   private _caretHighlightActionStore: CaretHighlightActionStore;
+  private _searchActionStore: SearchActionStore;
 
   public get fileSelectorStore(): FileSelectorStore {
     return this._fileSelectorStore;
@@ -32,6 +34,10 @@ class StoreContainer {
 
   public get caretHighlightActionStore(): CaretHighlightActionStore {
     return this._caretHighlightActionStore;
+  }
+
+  public get searchActionStore(): SearchActionStore {
+    return this._searchActionStore;
   }
 
   public static get instance(): StoreContainer {
@@ -57,6 +63,7 @@ class StoreContainer {
     this._currentFileStore = new CurrentFileStore();
     this._goToActionStore = new GoToActionStore();
     this._caretHighlightActionStore = new CaretHighlightActionStore();
+    this._searchActionStore = new SearchActionStore();
   }
 
   static reset() {

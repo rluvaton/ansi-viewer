@@ -26,6 +26,7 @@ export function DocumentContentComp({
   const numberOfLines = currentFileStore.totalLines;
 
   useEffect(() => {
+    // TODO - move from action store the list
     goToActionStore.registerList(outerRef);
 
     return () => {

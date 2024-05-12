@@ -1,15 +1,17 @@
-import { Observer, observer } from 'mobx-react-lite';
-import React from 'react';
-import { FixedSizeList, ListChildComponentProps } from 'react-window';
+import { observer } from 'mobx-react-lite';
+import React, { useEffect, useRef } from 'react';
 import InfiniteLoader from 'react-window-infinite-loader';
 
 import { LINES_BLOCK_SIZE } from '../../../shared/constants';
 import { getContainer } from '../../stores/stores-container';
 
-import s from './index.module.css';
+import { setCaretPosition } from '../../services/keyboard-navigation-in-file';
+import { DocumentContent } from './document-content';
 
 function LargeAnsiFileViewerComp() {
-  const { currentFileStore, currentInstanceStore } = getContainer();
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  const { currentFileStore } = getContainer();
 
   if (currentFileStore.currentFileState === 'error') {
     return <div>Error</div>;
@@ -21,60 +23,49 @@ function LargeAnsiFileViewerComp() {
 
   const numberOfLines = currentFileStore.totalLines;
 
-  return (
-    <InfiniteLoader
-      // So it will re-render when the lines are loaded
-      // without making lines an observable (as it is a big array)
-      key={currentFileStore.linesRerenderKey}
-      isItemLoaded={currentFileStore.isLineNumberLoaded}
-      itemCount={numberOfLines}
-      loadMoreItems={currentFileStore.loadMoreLines}
-      minimumBatchSize={LINES_BLOCK_SIZE}
-      // fetch 5 more blocks so it will be smoother
-      threshold={LINES_BLOCK_SIZE * 5}
-    >
-      {({ onItemsRendered, ref }) => (
-        <Observer>
-          {() => (
-            // TODO - should not be fixed
-            <FixedSizeList
-              key={currentFileStore.linesRerenderKey}
-              className={s.ansiContainer}
-              itemCount={numberOfLines}
-              onItemsRendered={onItemsRendered}
-              ref={ref}
-              height={currentInstanceStore.windowInnerHeight}
-              width="100%"
-              // this is the line height
-              // TODO - change to the actual line height by calculating it
-              itemSize={22}
-              overscanCount={LINES_BLOCK_SIZE * 3}
-            >
-              {LineCode}
-            </FixedSizeList>
-          )}
-        </Observer>
-      )}
-    </InfiniteLoader>
-  );
-}
+  useEffect(() => {
+    if (getContainer().currentFileStore.totalLines === 0) {
+      return;
+    }
 
-function LineCode({ index, style }: ListChildComponentProps) {
-  const { currentFileStore } = getContainer();
-
-  const lineContent = currentFileStore.getLine(index);
-
-  if (!lineContent) {
-    return null;
-  }
+    // Set caret to the start of the file so can copy
+    // and not using focus as it will put it on the line number and not the text
+    setCaretPosition(contentRef.current, 1, 0);
+  }, []);
 
   return (
     <div
-      key={index}
-      style={style}
-      className={`${s.line} ansi-line`}
-      dangerouslySetInnerHTML={lineContent}
-    ></div>
+      ref={contentRef}
+      contentEditable={true}
+      spellCheck={false}
+      data-disable-content-edit={true}
+      className="strip-content-editable-style"
+      onKeyDown={(e) => {
+        if (e.key === 'i') {
+          e.preventDefault();
+          getContainer().caretHighlightActionStore.highlightCurrentLocation();
+        }
+      }}
+    >
+      <InfiniteLoader
+        // So it will re-render when the lines are loaded
+        // without making lines an observable (as it is a big array)
+        key={currentFileStore.linesRerenderKey}
+        isItemLoaded={currentFileStore.isLineNumberLoaded}
+        itemCount={numberOfLines}
+        loadMoreItems={currentFileStore.loadMoreLines}
+        minimumBatchSize={LINES_BLOCK_SIZE}
+        // fetch 5 more blocks so it will be smoother
+        threshold={LINES_BLOCK_SIZE * 5}
+      >
+        {(props) => (
+          <DocumentContent
+            listRef={props.ref}
+            onItemsRendered={props.onItemsRendered}
+          />
+        )}
+      </InfiniteLoader>
+    </div>
   );
 }
 

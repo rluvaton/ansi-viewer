@@ -2,6 +2,7 @@ import assert from 'node:assert';
 
 import { Line } from '../../shared-types';
 import { LINES_BLOCK_SIZE } from '../../shared/constants';
+import { logger } from '../logger';
 import { LinesBlock } from './lines-block';
 
 /**
@@ -92,11 +93,18 @@ export class LinesBlockCoordinator {
 
     // if the line is in the first block than load the next 2 blocks
     if (blockIndex === 0) {
-      blockIndexesToGetReady = [blockIndex + 1, blockIndex + 2];
+      blockIndexesToGetReady = Array.from({ length: 9 }, (_, i) => i + 1);
     } else if (blockIndex === this.#linesBlocks.length - 1) {
-      blockIndexesToGetReady = [blockIndex - 1, blockIndex - 2];
+      blockIndexesToGetReady = Array.from(
+        { length: 9 },
+        (_, i) => blockIndex - i - 1,
+      );
     } else {
-      blockIndexesToGetReady = [blockIndex - 1, blockIndex + 1];
+      blockIndexesToGetReady = [
+        blockIndex - 2,
+        blockIndex - 1,
+        ...Array.from({ length: 7 }, (_, i) => blockIndex + i + 1),
+      ];
     }
 
     blockIndexesToGetReady = blockIndexesToGetReady.filter(
@@ -132,7 +140,7 @@ export class LinesBlockCoordinator {
 
           this.#alreadyParsedBlocks.push(...parsedBlocks);
         } catch (e) {
-          console.error('failed parsing next blocks', e);
+          logger.error('failed parsing next blocks', e);
         }
       }, 0);
     }

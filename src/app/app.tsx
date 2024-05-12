@@ -1,9 +1,9 @@
-import { ipcRenderer } from 'electron';
 import { observer } from 'mobx-react-lite';
 import React, { useEffect } from 'react';
 import { FileParsedEvent } from '../shared-types';
 import { AnsiViewerPage } from './ansi-viewer/page';
 import { LandingPage } from './landing-page';
+import { KeyboardNavigationInFileService } from './services';
 import { getContainer } from './stores/stores-container';
 
 function App() {
@@ -11,27 +11,40 @@ function App() {
     getContainer();
 
   useEffect(() => {
-    function onFileSelected(electronEvent: unknown, event: FileParsedEvent) {
+    function onFileSelected(_electronEvent: unknown, event: FileParsedEvent) {
       // Ignore events that were triggered by the client to avoid duplicate parsing
       if (event.requestedFromClient) {
         return;
       }
       getContainer().fileSelectorStore.onFileSelected(event);
     }
+
+    function onGoTo() {
+      getContainer().goToActionStore.openGoTo();
+    }
+
+    function onHighlightCaretPosition() {
+      getContainer().caretHighlightActionStore.highlightCurrentLocation();
+    }
+
     window.electron.onFileSelected(onFileSelected);
+    window.electron.onOpenGoTo(onGoTo);
+    window.electron.onHighlightCaretPosition(onHighlightCaretPosition);
 
     window.electron.windowInitialized();
 
-    // function logMem(_, ...args: any[]) {
-    //     console.log(...args);
-    // }
-    //
-    // window.electron.memoryUsage(logMem);
-    // window.electron.register();
-
     return () => {
       window.electron.offFileSelected(onFileSelected);
-      // window.electron.offMemoryUsage(logMem);
+      window.electron.offOpenGoTo(onGoTo);
+      window.electron.offHighlightCaretPosition(onHighlightCaretPosition);
+    };
+  }, []);
+
+  useEffect(() => {
+    KeyboardNavigationInFileService.setupKeyboardNavigationInFile();
+
+    return () => {
+      KeyboardNavigationInFileService.cleanupKeyboardNavigationInFile();
     };
   }, []);
 

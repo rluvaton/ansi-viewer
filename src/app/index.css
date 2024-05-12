@@ -20,3 +20,8 @@ body {
     user-select: none; /* Non-prefixed version, currently
                                   supported by Chrome, Edge, Opera and Firefox */
 }
+
+.strip-content-editable-style {
+    /* Disable outline when focus due to it being content editable */
+    outline: 0 solid transparent;
+}

@@ -1,8 +1,10 @@
 import {
+  EmptyCallbackFunction,
   FileParsedEvent,
   Line,
   ListenToFileChunk,
   OnFileSelectedCallback,
+  OnOpenGoToCallback,
 } from './shared-types';
 
 declare global {
@@ -30,13 +32,11 @@ declare global {
       startReadingFile(filePathToRead: string): void;
       getLines(fromLine: number): Promise<Line[]>;
 
-      register(): void;
-      memoryUsage(
-        cb: (event: unknown, message: string, obj: unknown) => void,
-      ): void;
-      offMemoryUsage(
-        cb: (event: unknown, message: string, obj: unknown) => void,
-      ): void;
+      onOpenGoTo(cb: OnOpenGoToCallback): void;
+      offOpenGoTo(cb: OnOpenGoToCallback): void;
+
+      onHighlightCaretPosition(cb: EmptyCallbackFunction): void;
+      offHighlightCaretPosition(cb: EmptyCallbackFunction): void;
     };
   }
 }

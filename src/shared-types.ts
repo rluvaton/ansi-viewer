@@ -27,3 +27,5 @@ export type OnFileSelectedCallback = (
   electronEvent: IpcRendererEvent,
   event: FileParsedEvent | undefined,
 ) => void;
+export type EmptyCallbackFunction = () => void;
+export type OnOpenGoToCallback = EmptyCallbackFunction;

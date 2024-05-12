@@ -1,6 +1,9 @@
 .ansiContainer pre {
     display: inline;
     margin: 0;
+
+    /* This is the same value as LINE_HEIGHT, make sure to keep it sync with this */
+    line-height: 22px;
 }
 
 .ansiContainer :global(.line-number) {

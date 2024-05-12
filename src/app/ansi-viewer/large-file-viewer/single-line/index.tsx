@@ -24,7 +24,7 @@ export function Line({ index, style }: ListChildComponentProps) {
     ></div>
   );
 }
-//
+
 // // Highlighting idea came from
 // // https://css-tricks.com/css-custom-highlight-api-early-look/
 // // TODO - move away from this
@@ -37,10 +37,10 @@ export function Line({ index, style }: ListChildComponentProps) {
 // function LineCodeComp({ index, style }: ListChildComponentProps) {
 //   const lineRef = React.useRef<HTMLDivElement>(null);
 //   const highlightContainerRef = React.useRef<HTMLDivElement>(null);
-//   const { currentFileStore } = getContainer();
+//   const { currentFileStore, searchActionStore } = getContainer();
 //
 //   const lineContent = currentFileStore.getLine(index);
-//   const highlightsForLine = currentFileStore.getHighlightsForLine(index);
+//   const highlightsForLine = searchActionStore.getHighlightsForLine(index);
 //
 //   useEffect(() => {
 //     if (!highlightsForLine.length) {
@@ -93,10 +93,10 @@ export function Line({ index, style }: ListChildComponentProps) {
 //
 //   useEffect(() => {
 //     // TODO - move to parent, dont do in each line
-//     if (currentFileStore.highlightedLocation.length === 0) {
+//     if (searchActionStore.highlightedLocation.length === 0) {
 //       highlight.clear();
 //     }
-//   }, [currentFileStore.highlightedLocation]);
+//   }, [searchActionStore.highlightedLocation]);
 //
 //   if (!lineContent) {
 //     return null;

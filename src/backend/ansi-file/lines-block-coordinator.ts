@@ -5,6 +5,7 @@ import { Line, SearchLocation, SearchResult } from '../../shared-types';
 import { LINES_BLOCK_SIZE } from '../../shared/constants';
 import { logger } from '../logger';
 import { LinesBlock } from './lines-block';
+import { search, searchInFile } from './search';
 
 /**
  * This class is responsible for:
@@ -169,112 +170,7 @@ export class LinesBlockCoordinator {
     );
   }
 
-  async search(search: string): Promise<SearchResult[]> {
-    // TODO - optimize this to not read the file and optimize the search
-    // TODO - search even if the result is between blocks
-    const fileContent = (await fs.readFile(this.filePath, 'utf-8')).toString();
-
-    // TODO - should better remove the ansi codes
-    // TODO - fix this
-    // eslint-disable-next-line no-control-regex
-    const fileContentWithoutAnsiCodes = fileContent.replace(
-      // TODO - remove this
-      // biome-ignore lint/suspicious/noControlCharactersInRegex: <explanation>
-      /\u001b[^m]*?m/g,
-      '',
-    );
-
-    const lines = fileContentWithoutAnsiCodes.split('\n');
-
-    const allSearchLocations: SearchResult[] = [];
-    let newSearchLocation: SearchResult | undefined;
-
-    do {
-      newSearchLocation = this.#getLocationOfSearch({
-        search,
-        content: fileContentWithoutAnsiCodes,
-        lines,
-        // This will avoid double highlighting on same location (searching for AA in AAA would result only in 1)
-        fromIndex:
-          allSearchLocations[allSearchLocations.length - 1]?.end?.position ??
-          -1,
-      });
-
-      if (newSearchLocation) {
-        allSearchLocations.push(newSearchLocation);
-      }
-    } while (newSearchLocation);
-
-    return allSearchLocations;
-  }
-
-  #getLocationOfSearch({
-    search,
-    content,
-    lines,
-    fromIndex,
-  }: {
-    search: string;
-    content: string;
-    lines: string[];
-    fromIndex: number;
-  }): SearchResult | undefined {
-    const position = content.indexOf(search, fromIndex + 1);
-
-    if (position === -1) {
-      return undefined;
-    }
-
-    let updatedPosition = position;
-
-    let line = 0;
-
-    let i = 0;
-
-    for (; i < lines.length; i++) {
-      const textLine = lines[i];
-      if (updatedPosition < textLine.length) {
-        break;
-      }
-
-      // +1 as we want to also count for the new line character
-      // TODO - what about \r\n
-      updatedPosition -= textLine.length + 1;
-      line++;
-    }
-
-    const start = {
-      line,
-      // The column is what left
-      column: Math.max(updatedPosition, 0),
-      position,
-    };
-
-    updatedPosition += search.length - 1;
-
-    for (; i < lines.length; i++) {
-      const textLine = lines[i];
-      if (updatedPosition < textLine.length) {
-        break;
-      }
-
-      // +1 as we want to also count for the new line character
-      // TODO - what about \r\n
-      updatedPosition -= textLine.length + 1;
-      line++;
-    }
-
-    const end = {
-      line,
-
-      // The column is what left
-      column: Math.max(updatedPosition, 0),
-      position: position + search.length - 1,
-    };
-
-    return {
-      start,
-      end,
-    };
+  async search(query: string): Promise<SearchResult[]> {
+    return await searchInFile(this.filePath, query);
   }
 }

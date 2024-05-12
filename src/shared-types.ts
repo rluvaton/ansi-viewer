@@ -23,8 +23,6 @@ export type Line = {
 export type SearchLocation = {
   line: number;
   column: number;
-  // Index of the text in the whole string
-  position: number;
 };
 
 export type SearchResult = {

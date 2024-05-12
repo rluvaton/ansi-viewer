@@ -20,19 +20,17 @@ export function DocumentContentComp({
 }: Omit<InfiniteLoaderChildrenProps, 'ref'> & { listRef: (ref: any) => void }) {
   const outerRef = useRef<HTMLDivElement>(null);
 
-  const { currentFileStore, currentInstanceStore, goToActionStore } =
-    getContainer();
+  const { currentFileStore, currentInstanceStore } = getContainer();
 
   const numberOfLines = currentFileStore.totalLines;
 
   useEffect(() => {
-    // TODO - move from action store the list
-    goToActionStore.registerList(outerRef);
+    currentFileStore.registerList(outerRef);
 
     return () => {
-      goToActionStore.unregisterList();
+      currentFileStore.unregisterList();
     };
-  }, [goToActionStore]);
+  }, [currentFileStore]);
 
   return (
     // TODO - should not be fixed

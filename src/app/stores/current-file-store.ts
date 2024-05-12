@@ -1,4 +1,5 @@
 import { action, makeObservable, observable } from 'mobx';
+import React from 'react';
 import {
   FileParsedEvent,
   Line,
@@ -13,6 +14,8 @@ type CurrentFileState = 'idle' | 'reading' | 'read' | 'error';
 export class CurrentFileStore {
   fileContent: string | undefined;
   currentFileState: CurrentFileState = 'idle';
+
+  listRef: React.RefObject<HTMLDivElement>;
 
   commonStyleElement: HTMLStyleElement;
   linesStorage: LinesStorage = new LinesStorage(10);
@@ -40,6 +43,14 @@ export class CurrentFileStore {
     this.commonStyleElement = document.querySelector(
       'style#common-style',
     ) as HTMLStyleElement;
+  }
+
+  registerList(ref: React.RefObject<HTMLDivElement>) {
+    this.listRef = ref;
+  }
+
+  unregisterList() {
+    this.listRef = null;
   }
 
   reset() {
@@ -264,6 +275,10 @@ export class CurrentFileStore {
 
   setHighlights(locations: SearchResult[]) {
     this.highlightedLocation = locations;
+  }
+
+  get listInitialized() {
+    return !!this.listRef?.current;
   }
 
   isLineHighlighted(lineNumber: number): boolean {

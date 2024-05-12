@@ -18,10 +18,7 @@ export class SearchActionStore {
   }
 
   canSearch() {
-    return (
-      // TODO - get from different location
-      !!this.listRef?.current
-    );
+    return getContainer().currentFileStore.listInitialized;
   }
 
   searchNow() {

@@ -4,6 +4,7 @@ import path from 'node:path';
 import { BrowserWindow } from 'electron';
 import { Line, LineItem } from '../../shared-types';
 import { LINES_BLOCK_SIZE } from '../../shared/constants';
+import { runFnAndLogDuration } from '../helper';
 import { Span, parseAnsiFromRawSpans, rawParse } from './ansi-parser';
 import { ParsedFileState } from './parsed-ansi-file';
 
@@ -110,9 +111,15 @@ pre.${className} {
   async parseFile(filePath: string) {
     const parsedAnsiFile = new ParsedFileState();
 
-    parsedAnsiFile.totalLines = await this.createBlockMap(filePath);
+    parsedAnsiFile.totalLines = await this.getNumberOfLinesInFile(filePath);
 
-    await this.#parseAnsiFile(parsedAnsiFile, filePath, true);
+    await runFnAndLogDuration({
+      name: `parse file intro for ${path.basename(filePath)}`,
+      fn: () => this.#parseAnsiFile(parsedAnsiFile, filePath, true),
+      logArgs: {
+        filePath,
+      },
+    });
 
     // This can happen if the file is bigger than the intro blocks
     if (parsedAnsiFile.shouldCreateFull()) {
@@ -121,6 +128,17 @@ pre.${className} {
           return;
         }
         try {
+          await runFnAndLogDuration({
+            name: `parse file full for ${path.basename(filePath)}`,
+            fn: () => this.#parseAnsiFile(parsedAnsiFile, filePath, false),
+            logArgs: {
+              filePath,
+            },
+            modifyLogMessage(msg: string) {
+              return `################\n${msg}\n################`;
+            },
+          });
+
           await this.#parseAnsiFile(parsedAnsiFile, filePath, false);
         } catch (e) {
           console.error('failed parsing file', e);
@@ -140,12 +158,6 @@ pre.${className} {
     if (signal.aborted) {
       throw new Error('Aborted');
     }
-
-    console.time(
-      `parseAnsiFile ${path.basename(filePath)} ${
-        createIntro ? 'intro' : 'full'
-      }`,
-    );
 
     const exitEarlyAC = new AbortController();
 
@@ -283,6 +295,8 @@ pre.${className} {
             // }
 
             if (createIntro) {
+              // TODO - remove this for the one outside the if
+              // await parsedAnsiFile.addBlock(block, createIntro);
               blocksLoaded++;
               if (blocksLoaded >= 10) {
                 exitEarlyAC.abort(exitEarlySignal);
@@ -314,15 +328,10 @@ pre.${className} {
 
     parsedAnsiFile.commonStyle = this.commonStyle;
 
-    console.timeEnd(
-      `parseAnsiFile ${path.basename(filePath)} ${
-        createIntro ? 'intro' : 'full'
-      }`,
-    );
     return parsedAnsiFile;
   }
 
-  async createBlockMap(filePath: string) {
+  async getNumberOfLinesInFile(filePath: string) {
     console.time(`computeTotalLines ${path.basename(filePath)}`);
     // Read file using file handle and compute number of lines
     const fileHandle = await fs.open(filePath, 'r');

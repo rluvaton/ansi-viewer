@@ -55,6 +55,11 @@ contextBridge.exposeInMainWorld('electron', {
     ipcRenderer.off('highlight-caret-position', cb),
 
   // --- Search related ---
+
+  onOpenSearch: (cb: EmptyCallbackFunction) =>
+    ipcRenderer.on('open-search', cb),
+  offOpenSearch: (cb: EmptyCallbackFunction) =>
+    ipcRenderer.off('open-search', cb),
   searchInFile: (search: string): Promise<SearchResult[]> =>
     ipcRenderer.invoke('search-in-file', search),
 });

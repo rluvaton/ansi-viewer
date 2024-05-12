@@ -1,6 +1,6 @@
 import { BrowserWindow, Menu, app } from 'electron';
 import { openFile } from './file-handling';
-import { highlightCaretPosition, openGoTo } from './misc-events';
+import { highlightCaretPosition, openGoTo, openSearch } from './misc-events';
 
 export function setupMainMenu() {
   // setting up the menu with just two items
@@ -90,6 +90,16 @@ export function setupMainMenu() {
           async click(_, browser) {
             // TODO - open window with the selected file if no window is open or replace the current one?
             await openGoTo(browser);
+          },
+        },
+        {
+          label: 'Search',
+          accelerator: 'CmdOrCtrl+F',
+          // TODO - mark as disabled if no file is open
+          // this is the main bit hijack the click event
+          async click(_, browser) {
+            // TODO - open window with the selected file if no window is open or replace the current one?
+            await openSearch(browser);
           },
         },
       ],

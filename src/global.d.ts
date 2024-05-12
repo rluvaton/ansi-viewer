@@ -41,6 +41,9 @@ declare global {
       offHighlightCaretPosition(cb: EmptyCallbackFunction): void;
 
       // --- Search related ---
+      onOpenSearch(cb: EmptyCallbackFunction): void;
+      offOpenSearch(cb: EmptyCallbackFunction): void;
+
       searchInFile(search: string): Promise<SearchResult[]>;
     };
   }

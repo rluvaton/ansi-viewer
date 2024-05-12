@@ -23,12 +23,17 @@ function App() {
       getContainer().goToActionStore.openGoTo();
     }
 
+    function onSearch() {
+      getContainer().searchActionStore.openSearch();
+    }
+
     function onHighlightCaretPosition() {
       getContainer().caretHighlightActionStore.highlightCurrentLocation();
     }
 
     window.electron.onFileSelected(onFileSelected);
     window.electron.onOpenGoTo(onGoTo);
+    window.electron.onOpenSearch(onSearch);
     window.electron.onHighlightCaretPosition(onHighlightCaretPosition);
 
     window.electron.windowInitialized();
@@ -36,6 +41,7 @@ function App() {
     return () => {
       window.electron.offFileSelected(onFileSelected);
       window.electron.offOpenGoTo(onGoTo);
+      window.electron.offOpenSearch(onSearch);
       window.electron.offHighlightCaretPosition(onHighlightCaretPosition);
     };
   }, []);

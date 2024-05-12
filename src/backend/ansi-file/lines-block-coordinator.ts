@@ -1,10 +1,9 @@
-import assert from "node:assert";
+import assert from 'node:assert';
 
-import {LinesBlock} from "./lines-block";
-import {Line, SearchLocation, SearchResult} from "../../shared-types";
-import {LINES_BLOCK_SIZE} from "../../shared/constants";
-import fs from "node:fs/promises";
-
+import fs from 'node:fs/promises';
+import { Line, SearchLocation, SearchResult } from '../../shared-types';
+import { LINES_BLOCK_SIZE } from '../../shared/constants';
+import { LinesBlock } from './lines-block';
 
 /**
  * This class is responsible for:
@@ -12,241 +11,267 @@ import fs from "node:fs/promises";
  * - Handle optimization like uncompressing next lines (TODO).
  */
 export class LinesBlockCoordinator {
-    // TODO - maybe use optimized data structure for this maybe
+  // TODO - maybe use optimized data structure for this maybe
 
-    /**
-     * saved blocks
-     *
-     * this will have the previous block and the next block of the requested block also parsed so it will be faster to access
-     *
-     * To avoid saving references the same block multiple times we gonna have rounded down to the nearest block size multiplication
-     */
-    #linesBlocks: LinesBlock[] = [];
+  /**
+   * saved blocks
+   *
+   * this will have the previous block and the next block of the requested block also parsed so it will be faster to access
+   *
+   * To avoid saving references the same block multiple times we gonna have rounded down to the nearest block size multiplication
+   */
+  #linesBlocks: LinesBlock[] = [];
 
-    filePath: string;
+  filePath: string;
 
-    #alreadyParsedBlocks: LinesBlock[] = [];
+  #alreadyParsedBlocks: LinesBlock[] = [];
 
-    currentlyNeededBlockIndexes = new Set<number>();
+  currentlyNeededBlockIndexes = new Set<number>();
 
-    #getLineNumberForLineMap(lineNumber: number) {
-        return Math.floor(lineNumber / LINES_BLOCK_SIZE);
+  #getLineNumberForLineMap(lineNumber: number) {
+    return Math.floor(lineNumber / LINES_BLOCK_SIZE);
+  }
+
+  #addBlock(block: LinesBlock) {
+    // the fromLine would already be rounded by the block size
+    this.#linesBlocks[this.#getLineNumberForLineMap(block.fromLine)] = block;
+  }
+
+  async addBlock(fromLine: number, block: Line[]) {
+    assert(
+      block.length <= LINES_BLOCK_SIZE,
+      `Lines block must be of size ${LINES_BLOCK_SIZE} or less`,
+    );
+    const linesBlock = new LinesBlock(fromLine, fromLine + block.length);
+    this.#addBlock(linesBlock);
+
+    await linesBlock.setLines(block);
+  }
+
+  getLinesForLineSync(lineNumber: number): Line[] | undefined {
+    const blockIndex = this.#getLineNumberForLineMap(lineNumber);
+    const block = this.#linesBlocks[blockIndex];
+
+    if (!block) {
+      return;
     }
 
-    #addBlock(block: LinesBlock) {
-        // the fromLine would already be rounded by the block size
-        this.#linesBlocks[this.#getLineNumberForLineMap(block.fromLine)] = block;
+    this.currentlyNeededBlockIndexes.add(blockIndex);
+
+    const currentBlockParsedLines = block.parseLinesSync();
+
+    this.#parsePossibleNextBlockInBackground(blockIndex);
+    return currentBlockParsedLines;
+  }
+
+  async getLinesForLine(lineNumber: number): Promise<Line[] | undefined> {
+    const blockIndex = this.#getLineNumberForLineMap(lineNumber);
+    // Save 1
+    const block = this.#linesBlocks[blockIndex];
+
+    if (!block) {
+      return;
     }
 
-    async addBlock(fromLine: number, block: Line[]) {
-        assert(block.length <= LINES_BLOCK_SIZE, `Lines block must be of size ${LINES_BLOCK_SIZE} or less`);
-        const linesBlock = new LinesBlock(fromLine, fromLine + block.length);
-        this.#addBlock(linesBlock);
+    this.currentlyNeededBlockIndexes.add(blockIndex);
 
-        await linesBlock.setLines(block);
+    const currentBlockParsedLines = await block.parseLines();
+
+    this.#parsePossibleNextBlockInBackground(blockIndex);
+
+    return currentBlockParsedLines;
+  }
+
+  #parsePossibleNextBlockInBackground(blockIndex: number) {
+    const block = this.#linesBlocks[blockIndex];
+    if (!block) {
+      // This should not happen as we already checked for this case
+      return;
     }
 
-    getLinesForLineSync(lineNumber: number): Line[] | undefined {
-        const blockIndex = this.#getLineNumberForLineMap(lineNumber);
-        const block = this.#linesBlocks[blockIndex];
+    this.#alreadyParsedBlocks.push(block);
 
-        if (!block) {
-            return;
-        }
+    let blockIndexesToGetReady: number[];
 
-        this.currentlyNeededBlockIndexes.add(blockIndex);
-
-        const currentBlockParsedLines = block.parseLinesSync();
-
-        this.#parsePossibleNextBlockInBackground(blockIndex);
-        return currentBlockParsedLines
+    // if the line is in the first block than load the next 2 blocks
+    if (blockIndex === 0) {
+      blockIndexesToGetReady = Array.from({ length: 9 }, (_, i) => i + 1);
+    } else if (blockIndex === this.#linesBlocks.length - 1) {
+      blockIndexesToGetReady = Array.from(
+        { length: 9 },
+        (_, i) => blockIndex - i - 1,
+      );
+    } else {
+      blockIndexesToGetReady = [
+        blockIndex - 2,
+        blockIndex - 1,
+        ...Array.from({ length: 7 }, (_, i) => blockIndex + i + 1),
+      ];
     }
 
-    async getLinesForLine(lineNumber: number): Promise<Line[] | undefined> {
-        const blockIndex = this.#getLineNumberForLineMap(lineNumber);
-        // Save 1
-        const block = this.#linesBlocks[blockIndex];
+    blockIndexesToGetReady = blockIndexesToGetReady.filter(
+      (index) =>
+        index > 0 &&
+        index < this.#linesBlocks.length - 1 &&
+        this.#linesBlocks[index]?.isParsed === false,
+    );
 
-        if (!block) {
-            return;
+    this.currentlyNeededBlockIndexes.clear();
+
+    this.currentlyNeededBlockIndexes.add(blockIndex);
+    blockIndexesToGetReady.forEach((index) =>
+      this.currentlyNeededBlockIndexes.add(index),
+    );
+
+    if (blockIndexesToGetReady.length) {
+      // TODO - Allow to stop the parsing if the user scrolled to a different block
+      // Avoid parsing if scrolling fast
+      setTimeout(async () => {
+        try {
+          const parsedBlocks = await Promise.all(
+            blockIndexesToGetReady
+              .filter((index) => this.currentlyNeededBlockIndexes.has(index))
+              .map(async (index) => {
+                const block = this.#linesBlocks[index];
+
+                await block.parseLines();
+
+                return block;
+              }),
+          );
+
+          this.#alreadyParsedBlocks.push(...parsedBlocks);
+        } catch (e) {
+          console.error('failed parsing next blocks', e);
         }
-
-        this.currentlyNeededBlockIndexes.add(blockIndex);
-
-        const currentBlockParsedLines = await block.parseLines();
-
-        this.#parsePossibleNextBlockInBackground(blockIndex);
-
-        return currentBlockParsedLines
+      }, 0);
     }
 
-    #parsePossibleNextBlockInBackground(blockIndex: number) {
-        const block = this.#linesBlocks[blockIndex];
-        if (!block) {
-            // This should not happen as we already checked for this case
-            return;
-        }
+    const parsedBlockToClear = this.#alreadyParsedBlocks.filter(
+      (block) => !this.currentlyNeededBlockIndexes.has(block.fromLine),
+    );
+    parsedBlockToClear.forEach((block) => block.clearParsedLines());
+    this.#alreadyParsedBlocks = this.#alreadyParsedBlocks.filter((block) =>
+      this.currentlyNeededBlockIndexes.has(block.fromLine),
+    );
+  }
 
-        this.#alreadyParsedBlocks.push(block);
+  get totalLines() {
+    const countWithoutLastBlock =
+      (this.#linesBlocks.length - 1) * LINES_BLOCK_SIZE;
 
-        let blockIndexesToGetReady: number[];
+    const lastBlock = this.#linesBlocks[this.#linesBlocks.length - 1];
 
-        // if the line is in the first block than load the next 2 blocks
-        if (blockIndex === 0) {
-            blockIndexesToGetReady = Array.from({length: 9}, (_, i) => i + 1);
-        } else if (blockIndex === this.#linesBlocks.length - 1) {
-            blockIndexesToGetReady = Array.from({length: 9}, (_, i) => blockIndex - i - 1);
-        } else {
-            blockIndexesToGetReady = [blockIndex - 2, blockIndex - 1, ...Array.from({length: 7}, (_, i) => blockIndex + i + 1)];
-        }
+    return (
+      countWithoutLastBlock +
+      (lastBlock ? lastBlock.toLine - lastBlock.fromLine : 0)
+    );
+  }
 
-        blockIndexesToGetReady = blockIndexesToGetReady.filter(index =>
-            index > 0 &&
-            index < this.#linesBlocks.length - 1 &&
-            this.#linesBlocks[index]?.isParsed === false
-        );
+  async search(search: string): Promise<SearchResult[]> {
+    // TODO - optimize this to not read the file and optimize the search
+    // TODO - search even if the result is between blocks
+    const fileContent = (await fs.readFile(this.filePath, 'utf-8')).toString();
 
-        this.currentlyNeededBlockIndexes.clear();
+    // TODO - should better remove the ansi codes
+    // TODO - fix this
+    // eslint-disable-next-line no-control-regex
+    const fileContentWithoutAnsiCodes = fileContent.replace(
+      /\u001b[^m]*?m/g,
+      '',
+    );
 
-        this.currentlyNeededBlockIndexes.add(blockIndex);
-        blockIndexesToGetReady.forEach(index => this.currentlyNeededBlockIndexes.add(index));
+    const lines = fileContentWithoutAnsiCodes.split('\n');
 
-        if (blockIndexesToGetReady.length) {
-            // TODO - Allow to stop the parsing if the user scrolled to a different block
-            // Avoid parsing if scrolling fast
-            setTimeout(async () => {
-                try {
-                    const parsedBlocks = await Promise.all(
-                        blockIndexesToGetReady
-                            .filter(index => this.currentlyNeededBlockIndexes.has(index))
-                            .map(async index => {
-                                const block = this.#linesBlocks[index];
+    const allSearchLocations: SearchResult[] = [];
+    let newSearchLocation: SearchResult | undefined;
 
-                                await block.parseLines();
+    do {
+      newSearchLocation = this.#getLocationOfSearch({
+        search,
+        content: fileContentWithoutAnsiCodes,
+        lines,
+        // This will avoid double highlighting on same location (searching for AA in AAA would result only in 1)
+        fromIndex:
+          allSearchLocations[allSearchLocations.length - 1]?.end?.position ??
+          -1,
+      });
 
-                                return block;
-                            })
-                    )
+      if (newSearchLocation) {
+        allSearchLocations.push(newSearchLocation);
+      }
+    } while (newSearchLocation);
 
-                    this.#alreadyParsedBlocks.push(...parsedBlocks);
-                } catch (e) {
-                    console.error('failed parsing next blocks', e);
-                }
-            }, 0);
-        }
+    return allSearchLocations;
+  }
 
-        const parsedBlockToClear = this.#alreadyParsedBlocks.filter(block => !this.currentlyNeededBlockIndexes.has(block.fromLine));
-        parsedBlockToClear.forEach(block => block.clearParsedLines());
-        this.#alreadyParsedBlocks = this.#alreadyParsedBlocks.filter(block => this.currentlyNeededBlockIndexes.has(block.fromLine));
+  #getLocationOfSearch({
+    search,
+    content,
+    lines,
+    fromIndex,
+  }: {
+    search: string;
+    content: string;
+    lines: string[];
+    fromIndex: number;
+  }): SearchResult | undefined {
+    const position = content.indexOf(search, fromIndex + 1);
+
+    if (position === -1) {
+      return undefined;
     }
 
-    get totalLines() {
-        const countWithoutLastBlock = (this.#linesBlocks.length - 1) * LINES_BLOCK_SIZE;
+    let updatedPosition = position;
 
-        const lastBlock = this.#linesBlocks[this.#linesBlocks.length - 1];
+    let line = 0;
 
+    let i = 0;
 
-        return countWithoutLastBlock + (lastBlock ? lastBlock.toLine - lastBlock.fromLine : 0);
+    for (; i < lines.length; i++) {
+      const textLine = lines[i];
+      if (updatedPosition < textLine.length) {
+        break;
+      }
+
+      // +1 as we want to also count for the new line character
+      // TODO - what about \r\n
+      updatedPosition -= textLine.length + 1;
+      line++;
     }
 
-    async search(search: string): Promise<SearchResult[]> {
-        // TODO - optimize this to not read the file and optimize the search
-        // TODO - search even if the result is between blocks
-        const fileContent = (await fs.readFile(this.filePath, 'utf-8')).toString();
+    const start = {
+      line,
+      // The column is what left
+      column: Math.max(updatedPosition, 0),
+      position,
+    };
 
-        // TODO - should better remove the ansi codes
-        // TODO - fix this
-        // eslint-disable-next-line no-control-regex
-        const fileContentWithoutAnsiCodes = fileContent.replace(/\u001b[^m]*?m/g,"")
+    updatedPosition += search.length - 1;
 
-        const lines = fileContentWithoutAnsiCodes.split('\n');
+    for (; i < lines.length; i++) {
+      const textLine = lines[i];
+      if (updatedPosition < textLine.length) {
+        break;
+      }
 
-        const allSearchLocations: SearchResult[] = [];
-        let newSearchLocation: SearchResult | undefined;
-
-        do {
-            newSearchLocation = this.#getLocationOfSearch({
-                search,
-                content: fileContentWithoutAnsiCodes,
-                lines,
-                // This will avoid double highlighting on same location (searching for AA in AAA would result only in 1)
-                fromIndex: allSearchLocations[allSearchLocations.length - 1]?.end?.position ?? -1
-            });
-
-            if (newSearchLocation) {
-                allSearchLocations.push(newSearchLocation);
-            }
-        } while (newSearchLocation);
-
-        return allSearchLocations;
+      // +1 as we want to also count for the new line character
+      // TODO - what about \r\n
+      updatedPosition -= textLine.length + 1;
+      line++;
     }
 
-    #getLocationOfSearch({search, content, lines, fromIndex}: {
-        search: string;
-        content: string;
-        lines: string[];
-        fromIndex: number;
-    }): SearchResult | undefined {
-        const position = content.indexOf(search, fromIndex + 1);
+    const end = {
+      line,
 
-        if (position === -1) {
-            return undefined;
-        }
+      // The column is what left
+      column: Math.max(updatedPosition, 0),
+      position: position + search.length - 1,
+    };
 
-        let updatedPosition = position;
-
-        let line = 0;
-
-        let i = 0;
-
-        for (; i < lines.length; i++) {
-            const textLine = lines[i];
-            if (updatedPosition < textLine.length) {
-                break;
-            }
-
-            // +1 as we want to also count for the new line character
-            // TODO - what about \r\n
-            updatedPosition -= textLine.length + 1;
-            line++;
-        }
-
-        const start = {
-            line,
-            // The column is what left
-            column: Math.max(updatedPosition, 0),
-            position
-        };
-
-        updatedPosition += search.length - 1;
-
-        for (; i < lines.length; i++){
-            const textLine = lines[i];
-            if (updatedPosition < textLine.length) {
-                break;
-            }
-
-            // +1 as we want to also count for the new line character
-            // TODO - what about \r\n
-            updatedPosition -= textLine.length + 1;
-            line++;
-        }
-
-        const end = {
-            line,
-
-            // The column is what left
-            column: Math.max(updatedPosition, 0),
-            position: position + search.length - 1
-        }
-
-        return {
-            start,
-            end,
-        };
-    }
-
-
-
-
+    return {
+      start,
+      end,
+    };
+  }
 }

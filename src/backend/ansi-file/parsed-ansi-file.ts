@@ -1,77 +1,80 @@
-import {BrowserWindow} from "electron";
-import {Line, SearchLocation, SearchResult} from "../../shared-types";
-import {LinesBlockCoordinator} from "./lines-block-coordinator";
-
+import { BrowserWindow } from 'electron';
+import { Line, SearchLocation, SearchResult } from '../../shared-types';
+import { LinesBlockCoordinator } from './lines-block-coordinator';
 
 export class ParsedFileState {
-    static #windowToParsedFileState = new WeakMap<BrowserWindow, ParsedFileState>();
+  static #windowToParsedFileState = new WeakMap<
+    BrowserWindow,
+    ParsedFileState
+  >();
 
-    #closeFileAbortController: AbortController;
-    commonStyle = '';
-    #blockCoordinator: LinesBlockCoordinator = new LinesBlockCoordinator();
-    nextFromLine = 0;
+  #closeFileAbortController: AbortController;
+  commonStyle = '';
+  #blockCoordinator: LinesBlockCoordinator = new LinesBlockCoordinator();
+  nextFromLine = 0;
 
-    constructor(filePath: string) {
-        this.#setupCloseFileAbortController();
+  constructor(filePath: string) {
+    this.#setupCloseFileAbortController();
 
-        this.#blockCoordinator.filePath = filePath;
+    this.#blockCoordinator.filePath = filePath;
+  }
+
+  static addNewState(window: BrowserWindow, state: ParsedFileState) {
+    ParsedFileState.#windowToParsedFileState.set(window, state);
+  }
+
+  static removeStateForWindow(window: BrowserWindow) {
+    const state = ParsedFileState.#windowToParsedFileState.get(window);
+
+    if (!state) {
+      return;
     }
 
-    static addNewState(window: BrowserWindow, state: ParsedFileState) {
-        ParsedFileState.#windowToParsedFileState.set(window, state);
-    }
+    state.abort();
 
-    static removeStateForWindow(window: BrowserWindow) {
-        const state = ParsedFileState.#windowToParsedFileState.get(window);
+    ParsedFileState.#windowToParsedFileState.delete(window);
+  }
 
-        if (!state) {
-            return;
-        }
+  static getOpenedFileState(window: BrowserWindow) {
+    return this.#windowToParsedFileState.get(window);
+  }
 
-        state.abort();
+  reset = () => {
+    this.abort();
+  };
 
-        ParsedFileState.#windowToParsedFileState.delete(window);
-    }
+  abort() {
+    this.#closeFileAbortController.abort();
+    this.#setupCloseFileAbortController();
+  }
 
-    static getOpenedFileState(window: BrowserWindow) {
-        return this.#windowToParsedFileState.get(window);
-    }
+  #setupCloseFileAbortController() {
+    this.#closeFileAbortController = new AbortController();
+    this.#closeFileAbortController.signal.addEventListener(
+      'abort',
+      this.reset,
+      { once: true },
+    );
+  }
 
-    reset = () => {
-        this.abort();
-    }
+  async addBlock(fromLine: number, block: Line[]) {
+    this.nextFromLine = Math.max(fromLine + block.length, this.nextFromLine);
+    await this.#blockCoordinator.addBlock(fromLine, block);
+  }
 
-    abort() {
-        this.#closeFileAbortController.abort();
-        this.#setupCloseFileAbortController();
-    }
+  get totalLines() {
+    return this.nextFromLine;
+  }
 
-    #setupCloseFileAbortController() {
-        this.#closeFileAbortController = new AbortController();
-        this.#closeFileAbortController.signal.addEventListener('abort', this.reset, {once: true});
-    }
+  getLinesSync(fromLine: number) {
+    return this.#blockCoordinator.getLinesForLineSync(fromLine);
+  }
 
-    async addBlock(fromLine: number, block: Line[]) {
-        this.nextFromLine = Math.max(fromLine + block.length, this.nextFromLine);
-        await this.#blockCoordinator.addBlock(fromLine, block);
-    }
+  getLines(fromLine: number): Promise<Line[]> {
+    return this.#blockCoordinator.getLinesForLine(fromLine);
+  }
 
-    get totalLines() {
-        return this.nextFromLine;
-    }
-
-    getLinesSync(fromLine: number) {
-        return this.#blockCoordinator.getLinesForLineSync(fromLine);
-    }
-
-    getLines(fromLine: number): Promise<Line[]> {
-        return this.#blockCoordinator.getLinesForLine(fromLine);
-    }
-
-    async search(search: string): Promise<SearchResult[]> {
-        return this.#blockCoordinator.search(search);
-    }
-
+  async search(search: string): Promise<SearchResult[]> {
+    return this.#blockCoordinator.search(search);
+  }
 }
-
-

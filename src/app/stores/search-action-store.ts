@@ -34,7 +34,7 @@ export class SearchActionStore {
     }
 
     // TODO - this search should be debounced?
-    return this.search(this.query);
+    return this.searchInFile(this.query);
   }
 
   canSearchQuery(query: string): boolean {
@@ -45,12 +45,22 @@ export class SearchActionStore {
     return query.length > 0;
   }
 
-  async search(query: string) {
-    if (!this.canSearchQuery(query)) {
+  async searchInFile(search: string) {
+    if (!this.canSearchQuery(search)) {
+      // TODO - clear highlights
+      this.clearHighlights();
       return;
     }
 
-    // TODO - scroll to location of the search
+    // TODO - abort old requests
+    const locations = await window.electron.searchInFile(search);
+
+    console.log('searchInFile', locations);
+
+    this.setHighlights(locations);
+    // TODO - set highlight
+
+    // TODO - scroll to location of the the first search
     //
     // this.listRef?.current?.scrollTo({
     //   top: y,
@@ -80,22 +90,6 @@ export class SearchActionStore {
       this.closeSearch();
     }
   };
-
-  async searchInFile(search: string) {
-    if (search === '') {
-      // TODO - clear highlights
-      this.clearHighlights();
-      return;
-    }
-
-    // TODO - abort old requests
-    const locations = await window.electron.searchInFile(search);
-
-    console.log('searchInFile', locations);
-
-    this.setHighlights(locations);
-    // TODO - set highlight
-  }
 
   clearHighlights() {
     this.highlightedLocation = [];

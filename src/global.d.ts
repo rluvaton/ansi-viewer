@@ -5,7 +5,7 @@ import {
   ListenToFileChunk,
   OnFileSelectedCallback,
   OnOpenGoToCallback,
-  SearchLocation,
+  SearchRequest,
   SearchResult,
 } from './shared-types';
 
@@ -44,7 +44,7 @@ declare global {
       onOpenSearch(cb: EmptyCallbackFunction): void;
       offOpenSearch(cb: EmptyCallbackFunction): void;
 
-      searchInFile(search: string): Promise<SearchResult[]>;
+      searchInFile(request: SearchRequest): Promise<SearchResult>;
     };
   }
 }

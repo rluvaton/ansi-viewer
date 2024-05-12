@@ -17,7 +17,8 @@ export class SearchActionStore {
   isOpen: boolean = false;
 
   query: string;
-  highlightedLocation: SearchResult[] = [];
+  searchResults: SearchResult;
+  highlightedLocation: SearchResult['results'] = [];
 
   constructor() {
     makeObservable(this, {
@@ -28,10 +29,20 @@ export class SearchActionStore {
       closeSearch: action,
       updateQuery: action,
 
+      reset: action,
+
+      searchResults: observable,
       highlightedLocation: observable,
       clearHighlights: action,
       setHighlights: action,
     });
+  }
+
+  reset() {
+    this.isOpen = false;
+    this.query = '';
+    this.highlightedLocation = [];
+    this.searchResults = undefined;
   }
 
   canSearch() {
@@ -64,7 +75,14 @@ export class SearchActionStore {
     }
 
     // TODO - abort old requests
-    const locations = await window.electron.searchInFile(search);
+
+    // TODO - get Math.min(search results, visible lines * 5, 100)
+    //        get the number of results anyway
+    //        change ack to allow getting from specific line numbers
+    //        get number of search results
+    const locations = await window.electron.searchInFile({
+      query: search,
+    });
 
     console.log('searchInFile', locations);
 
@@ -107,8 +125,8 @@ export class SearchActionStore {
     cssHighlight.clear();
   }
 
-  setHighlights(locations: SearchResult[]) {
-    this.highlightedLocation = locations;
+  setHighlights(locations: SearchResult) {
+    this.highlightedLocation = locations.results;
     this.rerenderHighlights();
   }
 
@@ -119,7 +137,7 @@ export class SearchActionStore {
     );
   }
 
-  getHighlightsForLine(lineNumber: number): SearchResult[] {
+  getHighlightsForLine(lineNumber: number): SearchResult['results'] {
     // TODO - fix for multi line highlighting
     return this.highlightedLocation.filter(
       (location) =>
@@ -131,6 +149,11 @@ export class SearchActionStore {
   }
 
   rerenderHighlights() {
+    // TODO - only highlight visible lines
+    // TODO - get Math.min(search results, visible lines * 5, 100)
+    //        get the number of results anyway
+    //        change ack to allow getting from specific line numbers
+    //        get number of search results
     // cssHighlight.delete(range);
     cssHighlight.clear();
     // TODO - move to parent, dont do in each line

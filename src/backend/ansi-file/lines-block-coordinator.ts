@@ -1,11 +1,9 @@
 import assert from 'node:assert';
-
-import fs from 'node:fs/promises';
-import { Line, SearchLocation, SearchResult } from '../../shared-types';
+import { Line, SearchRequest, SearchResult } from '../../shared-types';
 import { LINES_BLOCK_SIZE } from '../../shared/constants';
 import { logger } from '../logger';
 import { LinesBlock } from './lines-block';
-import { search, searchInFile } from './search';
+import { searchInFile } from './search';
 
 /**
  * This class is responsible for:
@@ -170,7 +168,7 @@ export class LinesBlockCoordinator {
     );
   }
 
-  async search(query: string): Promise<SearchResult[]> {
-    return await searchInFile(this.filePath, query);
+  async search(request: SearchRequest): Promise<SearchResult> {
+    return await searchInFile(this.filePath, request);
   }
 }

@@ -1,5 +1,5 @@
 import { BrowserWindow } from 'electron';
-import { Line, SearchLocation, SearchResult } from '../../shared-types';
+import { Line, SearchRequest, SearchResult } from '../../shared-types';
 import { LinesBlockCoordinator } from './lines-block-coordinator';
 
 export class ParsedFileState {
@@ -74,7 +74,7 @@ export class ParsedFileState {
     return this.#blockCoordinator.getLinesForLine(fromLine);
   }
 
-  async search(search: string): Promise<SearchResult[]> {
+  async search(search: SearchRequest): Promise<SearchResult> {
     return this.#blockCoordinator.search(search);
   }
 }

@@ -8,6 +8,7 @@ import {
   Line,
   OnFileSelectedCallback,
   OnOpenGoToCallback,
+  SearchRequest,
   SearchResult,
 } from './shared-types';
 
@@ -60,6 +61,6 @@ contextBridge.exposeInMainWorld('electron', {
     ipcRenderer.on('open-search', cb),
   offOpenSearch: (cb: EmptyCallbackFunction) =>
     ipcRenderer.off('open-search', cb),
-  searchInFile: (search: string): Promise<SearchResult[]> =>
-    ipcRenderer.invoke('search-in-file', search),
+  searchInFile: (searchRequest: SearchRequest): Promise<SearchResult> =>
+    ipcRenderer.invoke('search-in-file', searchRequest),
 });

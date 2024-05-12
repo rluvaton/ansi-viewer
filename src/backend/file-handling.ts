@@ -1,6 +1,6 @@
 import * as fs from 'node:fs/promises';
 import { BrowserWindow, dialog, ipcMain } from 'electron';
-import { FileParsedEvent, SearchResult } from '../shared-types';
+import { FileParsedEvent, SearchRequest, SearchResult } from '../shared-types';
 import { OpenedFileState } from './ansi-file/open-file-state';
 import { ParsedFileState } from './ansi-file/parsed-ansi-file';
 import { getWindowFromEvent, runFnAndLogDuration } from './helper';
@@ -187,7 +187,7 @@ ipcMain.handle('get-lines', async (event, fromLineNumber) => {
 
 ipcMain.handle(
   'search-in-file',
-  async (event, search: string): Promise<SearchResult[]> => {
+  async (event, search: SearchRequest): Promise<SearchResult> => {
     // TODO - abort previous search if it's still running
 
     const window = getWindowFromEvent(event);
@@ -202,7 +202,7 @@ ipcMain.handle(
     const results = await parsed.search(search);
     console.timeEnd(`search ${search}`);
 
-    console.log(`Found ${results.length} results for ${search}`);
+    console.log(`Found ${results.total} results for ${search}`);
 
     return results;
   },

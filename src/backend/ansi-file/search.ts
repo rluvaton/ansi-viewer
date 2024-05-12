@@ -1,14 +1,15 @@
 import assert from 'node:assert';
 import { spawn } from 'node:child_process';
-import { SearchResult } from '../../shared-types';
+import { SearchRequest, SearchResult } from '../../shared-types';
 
 const patchedAgPath = '/Users/rluvaton/dev/open-source/the_silver_searcher/ag';
 
 export async function searchInFile(
   filePath: string,
-  query: string,
-): Promise<SearchResult[]> {
-  const ackMateResult = await internalSearch(filePath, query);
+  request: SearchRequest,
+): Promise<SearchResult> {
+  // TODO - support pagination and cursor
+  const ackMateResult = await internalSearch(filePath, request.query);
 
   console.log('ackMateResult', ackMateResult);
 
@@ -53,10 +54,10 @@ async function internalSearch(
   }, '');
 }
 
-function parseAckMateResult(ackMateResult: string): SearchResult[] {
+function parseAckMateResult(ackMateResult: string): SearchResult {
   const lines = ackMateResult.split('\n');
 
-  const searchResults: SearchResult[] = [];
+  const searchResultsMatches: SearchResult['results'] = [];
 
   for (const line of lines) {
     // Empty line
@@ -89,7 +90,7 @@ function parseAckMateResult(ackMateResult: string): SearchResult[] {
       const column = parseInt(columnAsStr, 10);
       const length = parseInt(lengthAsStr, 10);
 
-      searchResults.push({
+      searchResultsMatches.push({
         start: {
           line: lineNumber,
           column,
@@ -104,7 +105,11 @@ function parseAckMateResult(ackMateResult: string): SearchResult[] {
     }
   }
 
-  return searchResults;
+  return {
+    results: searchResultsMatches,
+    total: searchResultsMatches.length,
+    // TODO - add cursor
+  };
 }
 
 // TODO - multi line matches

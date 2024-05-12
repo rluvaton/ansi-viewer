@@ -52,7 +52,7 @@ export class CurrentFileStore {
     this.linesStorage.reset();
 
     // TODO - maybe move this to the search store that it will listen to some change?
-    getContainer().searchActionStore.clearHighlights();
+    getContainer().searchActionStore.reset();
   }
 
   selectFile(event: FileParsedEvent, resetBefore = false) {

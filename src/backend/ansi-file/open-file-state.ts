@@ -253,8 +253,5 @@ function buildHtmlForItems(lineIndex: number, items: LineItem[]): Line {
           }</pre>`,
       )
       .join('')}</pre>`,
-
-    // TODO - recheck if needed
-    lineLength: items.reduce((acc, item) => acc + item.text.length, 0),
   };
 }

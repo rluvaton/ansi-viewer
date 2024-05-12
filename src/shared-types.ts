@@ -11,13 +11,18 @@ export interface FileParsedEvent {
 export interface LineItem {
   className: string;
   text: string;
-  lineLength: number;
 }
 
 export type Line = {
   lineIndex: number;
   __html: string;
-  lineLength: number;
+};
+
+export type SearchRequest = {
+  query: string;
+  size?: number;
+  afterCursor?: string;
+  beforeCursor?: string;
 };
 
 export type SearchLocation = {
@@ -25,9 +30,16 @@ export type SearchLocation = {
   column: number;
 };
 
-export type SearchResult = {
+export type SingleSearchResult = {
   start: SearchLocation;
   end: SearchLocation;
+};
+
+export type SearchResult = {
+  results: SingleSearchResult[];
+  total: number;
+  nextCursor?: string;
+  prevCursor?: string;
 };
 
 export type ListenToFileChunk = (

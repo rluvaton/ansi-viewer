@@ -1,3 +1,5 @@
+import { SearchLocation } from '../../shared-types';
+
 export function setupKeyboardNavigationInFile() {
   // TODO - change this to only on the ansi viewer and not the whole page
   document.addEventListener('beforeinput', avoidChangingInput);
@@ -41,41 +43,12 @@ export function setCaretPosition(
 
   element.focus();
 
-  setCaretPositionInLine(lineContent, column);
-}
+  const { range } = getRangeForColumnInLineElement(lineContent, column);
 
-// Reference: https://stackoverflow.com/a/36953852/5923666
-function setCaretPositionInLine(el: Node, column: number) {
-  // Loop through all child nodes
-  for (const node of el.childNodes) {
-    if (node.nodeName !== '#text') {
-      column = setCaretPositionInLine(node, column);
-
-      if (column === -1) {
-        return -1; // no need to finish the for loop
-      }
-
-      continue;
-    }
-
-    // Text node
-    if (node.length < column) {
-      column -= node.length;
-      continue;
-    }
-
-    // finally add our range
-    const range = document.createRange();
+  if (range) {
     const sel = window.getSelection();
-    range.setStart(node, column);
-    range.collapse(true);
     sel.removeAllRanges();
-    sel.addRange(range);
-
-    return -1; // we are done
   }
-
-  return column; // needed because of recursion stuff
 }
 
 function avoidChangingInput(e: InputEvent) {
@@ -319,4 +292,85 @@ function shouldJumpToStartOfNextLine(_e: KeyboardEvent, range: Range) {
   // }
   //
   // return false;
+}
+
+export async function getAsyncRangeForLocation(
+  location: SearchLocation,
+  retryCount = STARTING_RETRY_COUNT,
+): Promise<Range | undefined> {
+  let range: Range | undefined = getRangeForLocation(location);
+
+  for (let i = 0; i < retryCount && !range; i++) {
+    const sleepTime = (STARTING_RETRY_COUNT - retryCount + 1) * 100;
+
+    console.warn(`line ${location.line} not found, retrying in ${sleepTime}`);
+    // TODO - find a better way - like listen for the line to load or something
+
+    if (retryCount <= 0) {
+      console.warn(`reached max retry count looking for line ${location.line}`);
+      return;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, sleepTime));
+    range = getRangeForLocation(location);
+  }
+
+  return range;
+}
+
+export function getRangeForLocation(
+  location: SearchLocation,
+  line?: HTMLElement,
+): Range | undefined {
+  const lineContent = (line || document).querySelector(
+    `pre[data-line="${location.line}"]`,
+  );
+
+  if (!lineContent) {
+    return;
+  }
+
+  const result = getRangeForColumnInLineElement(lineContent, location.column);
+
+  return result.range;
+}
+
+// Reference: https://stackoverflow.com/a/36953852/5923666
+function getRangeForColumnInLineElement(
+  el: Node,
+  column: number,
+): { column: number; range: undefined } | { column: -1; range: Range } {
+  // Loop through all child nodes
+  for (const node of el.childNodes) {
+    if (node.nodeName !== '#text') {
+      const result = getRangeForColumnInLineElement(node, column);
+
+      if (result.column === -1) {
+        return result; // no need to finish the for loop
+      }
+
+      column = result.column;
+
+      continue;
+    }
+
+    // Text node
+    if (node.length < column) {
+      column -= node.length;
+      continue;
+    }
+
+    // finally add our range
+    const range = document.createRange();
+    range.setStart(node, column);
+    range.collapse(true);
+
+    // We are done
+    return {
+      range,
+      column: -1,
+    };
+  }
+
+  return { column, range: undefined }; // needed because of recursion stuff
 }

@@ -9,19 +9,19 @@ import s from './index.module.css';
 function SearchPopUpComp() {
   const firstRenderAfterOpenRef = React.useRef(true);
   const { searchActionStore } = getContainer();
-  //
-  // const debouncedSearch = useDebouncedCallback(
-  //     // function
-  //     (value: string) => {
-  //         console.log(`Searching ${value}`);
-  //
-  //         searchActionStore.search(value).catch((error) => {
-  //             console.error('searchInFile', error);
-  //         });
-  //     },
-  //     // delay in ms
-  //     300,
-  // );
+
+  const debouncedSearch = useDebouncedCallback(
+    // function
+    (value: string) => {
+      console.log(`Searching ${value}`);
+
+      searchActionStore.searchInFile(value).catch((error) => {
+        console.error('searchInFile', error);
+      });
+    },
+    // delay in ms
+    300,
+  );
 
   if (!searchActionStore.isOpen) {
     firstRenderAfterOpenRef.current = true;
@@ -44,6 +44,7 @@ function SearchPopUpComp() {
           // TODO - add debounce on search
           onChange={(e) => searchActionStore.updateQuery(e.target.value)}
           onKeyUp={(e) => {
+            debouncedSearch(e.target.value);
             if (e.key !== 'Enter') {
               return;
             }

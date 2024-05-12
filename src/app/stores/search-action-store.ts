@@ -1,6 +1,17 @@
 import { action, makeObservable, observable } from 'mobx';
+import { useEffect } from 'react';
 import { SearchResult } from '../../shared-types';
+import { getRangeForLocation } from '../services/keyboard-navigation-in-file';
 import { getContainer } from './stores-container';
+
+// Highlighting idea came from
+// https://css-tricks.com/css-custom-highlight-api-early-look/
+// TODO - move away from this
+// @ts-ignore
+const cssHighlight = new Highlight();
+
+// @ts-ignore
+CSS.highlights.set('my-custom-highlight', cssHighlight);
 
 export class SearchActionStore {
   isOpen: boolean = false;
@@ -27,7 +38,7 @@ export class SearchActionStore {
     return getContainer().currentFileStore.listInitialized;
   }
 
-  searchNow() {
+  async searchNow() {
     // TODO - abort debounce if exist
     if (!this.canSearchQuery(this.query)) {
       return;
@@ -93,10 +104,12 @@ export class SearchActionStore {
 
   clearHighlights() {
     this.highlightedLocation = [];
+    cssHighlight.clear();
   }
 
   setHighlights(locations: SearchResult[]) {
     this.highlightedLocation = locations;
+    this.rerenderHighlights();
   }
 
   isLineHighlighted(lineNumber: number): boolean {
@@ -115,5 +128,38 @@ export class SearchActionStore {
 
     // TODO - fix multiple highlights on same line
     // TODO - fix multiple highlights that not start at the start of the line but end in the middle and another that start from the middle + something to other lines
+  }
+
+  rerenderHighlights() {
+    // cssHighlight.delete(range);
+    cssHighlight.clear();
+    // TODO - move to parent, dont do in each line
+    if (this.highlightedLocation.length === 0) {
+      cssHighlight.clear();
+      return;
+    }
+
+    const highlights = this.highlightedLocation
+      .map((highlight) => {
+        const start = getRangeForLocation(highlight.start);
+        const end = getRangeForLocation(highlight.end);
+
+        if (!start || !end) {
+          return undefined;
+        }
+
+        start.setEnd(end.endContainer, end.endOffset);
+
+        return start;
+      })
+      .filter(Boolean) as Range[];
+
+    console.log(highlights);
+
+    for (const range of highlights) {
+      cssHighlight.add(range);
+    }
+
+    // TODO - on line into view should highlight it
   }
 }

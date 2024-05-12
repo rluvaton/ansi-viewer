@@ -1,10 +1,12 @@
 import { action, makeObservable, observable } from 'mobx';
+import { SearchResult } from '../../shared-types';
 import { getContainer } from './stores-container';
 
 export class SearchActionStore {
   isOpen: boolean = false;
 
   query: string;
+  highlightedLocation: SearchResult[] = [];
 
   constructor() {
     makeObservable(this, {
@@ -14,6 +16,10 @@ export class SearchActionStore {
       openSearch: action,
       closeSearch: action,
       updateQuery: action,
+
+      highlightedLocation: observable,
+      clearHighlights: action,
+      setHighlights: action,
     });
   }
 
@@ -74,4 +80,46 @@ export class SearchActionStore {
       this.closeSearch();
     }
   };
+
+  async searchInFile(search: string) {
+    if (search === '') {
+      // TODO - clear highlights
+      this.clearHighlights();
+      return;
+    }
+
+    // TODO - abort old requests
+    const locations = await window.electron.searchInFile(search);
+
+    console.log('searchInFile', locations);
+
+    this.setHighlights(locations);
+    // TODO - set highlight
+  }
+
+  clearHighlights() {
+    this.highlightedLocation = [];
+  }
+
+  setHighlights(locations: SearchResult[]) {
+    this.highlightedLocation = locations;
+  }
+
+  isLineHighlighted(lineNumber: number): boolean {
+    return this.highlightedLocation.some(
+      (location) =>
+        location.start.line <= lineNumber && location.end.line >= lineNumber,
+    );
+  }
+
+  getHighlightsForLine(lineNumber: number): SearchResult[] {
+    // TODO - fix for multi line highlighting
+    return this.highlightedLocation.filter(
+      (location) =>
+        location.start.line <= lineNumber && location.end.line >= lineNumber,
+    );
+
+    // TODO - fix multiple highlights on same line
+    // TODO - fix multiple highlights that not start at the start of the line but end in the middle and another that start from the middle + something to other lines
+  }
 }

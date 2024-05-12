@@ -1,13 +1,9 @@
 import { action, makeObservable, observable } from 'mobx';
 import React from 'react';
-import {
-  FileParsedEvent,
-  Line,
-  SearchLocation,
-  SearchResult,
-} from '../../shared-types';
+import { FileParsedEvent, Line } from '../../shared-types';
 import { LINES_BLOCK_SIZE } from '../../shared/constants';
 import { LinesStorage } from '../lines-storage';
+import { getContainer } from './stores-container';
 
 type CurrentFileState = 'idle' | 'reading' | 'read' | 'error';
 
@@ -24,20 +20,15 @@ export class CurrentFileStore {
 
   resetAbortController: AbortController = new AbortController();
 
-  highlightedLocation: SearchResult[] = [];
-
   constructor() {
     makeObservable(this, {
       currentFileState: observable,
       fileContent: observable,
       linesRerenderKey: observable,
-      highlightedLocation: observable,
       reset: action,
       selectFile: action,
       setAsReading: action,
       loadMoreLines: action,
-      clearHighlights: action,
-      setHighlights: action,
     });
 
     this.commonStyleElement = document.querySelector(
@@ -59,7 +50,9 @@ export class CurrentFileStore {
     this.currentFileState = 'idle';
     this.fileContent = undefined;
     this.linesStorage.reset();
-    this.clearHighlights();
+
+    // TODO - maybe move this to the search store that it will listen to some change?
+    getContainer().searchActionStore.clearHighlights();
   }
 
   selectFile(event: FileParsedEvent, resetBefore = false) {
@@ -203,22 +196,6 @@ export class CurrentFileStore {
     }
   }
 
-  async searchInFile(search: string) {
-    if (search === '') {
-      // TODO - clear highlights
-      this.clearHighlights();
-      return;
-    }
-
-    // TODO - abort old requests
-    const locations = await window.electron.searchInFile(search);
-
-    console.log('searchInFile', locations);
-
-    this.setHighlights(locations);
-    // TODO - set highlight
-  }
-
   setAsReading() {
     this.currentFileState = 'reading';
   }
@@ -269,33 +246,7 @@ export class CurrentFileStore {
     return this.linesStorage.getLine(lineNumber);
   }
 
-  clearHighlights() {
-    this.highlightedLocation = [];
-  }
-
-  setHighlights(locations: SearchResult[]) {
-    this.highlightedLocation = locations;
-  }
-
   get listInitialized() {
     return !!this.listRef?.current;
-  }
-
-  isLineHighlighted(lineNumber: number): boolean {
-    return this.highlightedLocation.some(
-      (location) =>
-        location.start.line <= lineNumber && location.end.line >= lineNumber,
-    );
-  }
-
-  getHighlightsForLine(lineNumber: number): SearchResult[] {
-    // TODO - fix for multi line highlighting
-    return this.highlightedLocation.filter(
-      (location) =>
-        location.start.line <= lineNumber && location.end.line >= lineNumber,
-    );
-
-    // TODO - fix multiple highlights on same line
-    // TODO - fix multiple highlights that not start at the start of the line but end in the middle and another that start from the middle + something to other lines
   }
 }

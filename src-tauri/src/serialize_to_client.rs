@@ -1,5 +1,4 @@
-use crate::ansi_parser::parse_ansi_text::ansi::types::Span;
-
+use ansi_parser_extended::parse_ansi_text::ansi::types::Span;
 
 #[derive(Clone, Debug, serde::Serialize)]
 pub struct FileParsed {

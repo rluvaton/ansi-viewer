@@ -1,10 +1,10 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use ansi_parser_extended::files::file_reader::FileReaderOptions;
+use ansi_parser_extended::parse_ansi_text::parse_options::ParseOptions;
+use ansi_parser_extended::parse_file::file_to_lines_of_spans::read_ansi_file_to_lines;
+use ansi_parser_extended::parse_file::types::ReadAnsiFileOptions;
 
-use crate::ansi_parser::files::file_reader::FileReaderOptions;
-use crate::ansi_parser::parse_ansi_text::parse_options::ParseOptions;
-use crate::ansi_parser::parse_file::file_to_lines_of_spans::read_ansi_file_to_lines;
-use crate::ansi_parser::parse_file::types::ReadAnsiFileOptions;
 use crate::serialize_to_client::{create_line_from_spans, FileParsed, Line};
 
 pub fn open_file_cmd(file_path: String) -> Option<FileParsed> {

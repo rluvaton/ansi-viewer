@@ -2,7 +2,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 pub mod open_file;
-pub mod ansi_parser;
 pub mod serialize_to_client;
 pub mod get_lines;
 

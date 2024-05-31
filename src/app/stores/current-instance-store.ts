@@ -5,6 +5,7 @@ import {
   observable,
   runInAction,
 } from 'mobx';
+import { Backend } from '../services';
 
 export class CurrentInstanceStore {
   public _refreshKeyNumber = 0;
@@ -22,11 +23,11 @@ export class CurrentInstanceStore {
       windowInnerWidth: observable,
     });
 
-    window.electron.onSoftRefresh(this.refresh);
+    Backend.onSoftRefresh(this.refresh);
     cleanupSignal.addEventListener(
       'abort',
       () => {
-        window.electron.offSoftRefresh(this.refresh);
+        Backend.offSoftRefresh(this.refresh);
       },
       { once: true },
     );
@@ -42,7 +43,7 @@ export class CurrentInstanceStore {
       { signal: cleanupSignal },
     );
 
-    this.#currentWindowId = window.electron.getWindowId();
+    this.#currentWindowId = Backend.getWindowId();
   }
 
   refresh = () => {

@@ -3,7 +3,7 @@ import React, { useEffect } from 'react';
 import { FileParsedEvent } from '../shared-types';
 import { AnsiViewerPage } from './ansi-viewer/page';
 import { LandingPage } from './landing-page';
-import { KeyboardNavigationInFileService } from './services';
+import { Backend, KeyboardNavigationInFileService } from './services';
 import { getContainer } from './stores/stores-container';
 
 function App() {
@@ -16,6 +16,7 @@ function App() {
       if (event.requestedFromClient) {
         return;
       }
+
       getContainer().fileSelectorStore.onFileSelected(event);
     }
 
@@ -32,23 +33,23 @@ function App() {
         filePath: string;
       }>,
     ) {
-      await window.electron.selectFile({
+      await Backend.selectFile({
         filePath: message.detail.filePath,
       });
     }
 
-    window.electron.onFileSelected(onFileSelected);
-    window.electron.onOpenGoTo(onGoTo);
-    window.electron.onHighlightCaretPosition(onHighlightCaretPosition);
+    Backend.onFileSelected(onFileSelected);
+    Backend.onOpenGoTo(onGoTo);
+    Backend.onHighlightCaretPosition(onHighlightCaretPosition);
 
-    window.electron.windowInitialized();
+    Backend.windowInitialized();
 
     window.addEventListener('tests-custom-file-select', customSelectFile);
 
     return () => {
-      window.electron.offFileSelected(onFileSelected);
-      window.electron.offOpenGoTo(onGoTo);
-      window.electron.offHighlightCaretPosition(onHighlightCaretPosition);
+      Backend.offFileSelected(onFileSelected);
+      Backend.offOpenGoTo(onGoTo);
+      Backend.offHighlightCaretPosition(onHighlightCaretPosition);
       window.removeEventListener('tests-custom-file-select', customSelectFile);
     };
   }, []);

@@ -2,6 +2,7 @@ import { action, makeObservable, observable } from 'mobx';
 import { FileParsedEvent, Line } from '../../shared-types';
 import { LINES_BLOCK_SIZE } from '../../shared/constants';
 import { LinesStorage } from '../lines-storage';
+import { Backend } from '../services';
 
 type CurrentFileState = 'idle' | 'reading' | 'read' | 'error';
 
@@ -58,7 +59,7 @@ export class CurrentFileStore {
     this.selectFile(
       {
         filePath,
-        firstLines: await window.electron.getLines(0),
+        firstLines: await Backend.getLines(0),
         totalLines: this.totalLines,
         globalStyle: this.commonStyleElement.innerHTML,
         requestedFromClient: true,
@@ -135,8 +136,8 @@ export class CurrentFileStore {
     }
 
     // Attach the listener before reading the file to avoid missing data
-    window.electron.listenToFileChunks(filePathToRead, fileStreamChunkListener);
-    window.electron.startReadingFile(filePathToRead);
+    Backend.listenToFileChunks(filePathToRead, fileStreamChunkListener);
+    Backend.startReadingFile(filePathToRead);
 
     function onAbort() {
       reject('Aborted');
@@ -173,10 +174,7 @@ export class CurrentFileStore {
       }
     } finally {
       clearTimeout(timeoutTimer);
-      window.electron.cleanupFileChunkListener(
-        filePathToRead,
-        fileStreamChunkListener,
-      );
+      Backend.cleanupFileChunkListener(filePathToRead, fileStreamChunkListener);
       this.resetAbortController.signal.removeEventListener('abort', onAbort);
     }
   }
@@ -220,7 +218,7 @@ export class CurrentFileStore {
     this.linesStorage.addBlocks(
       await Promise.all(
         Array.from({ length: numberOfBlocks }, (_, i) =>
-          window.electron.getLines(startLineNumber + i * LINES_BLOCK_SIZE),
+          Backend.getLines(startLineNumber + i * LINES_BLOCK_SIZE),
         ),
       ),
     );

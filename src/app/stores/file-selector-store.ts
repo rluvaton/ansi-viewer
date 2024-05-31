@@ -1,5 +1,6 @@
 import { action, makeObservable, observable, reaction } from 'mobx';
 import { FileParsedEvent } from '../../shared-types';
+import { Backend } from '../services';
 import { getContainer } from './stores-container';
 
 type FileSelectingState = 'idle' | 'selecting' | 'selected' | 'error';
@@ -71,8 +72,8 @@ export class FileSelectorStore {
 
     try {
       [selectedFileEvent] = await Promise.all([
-        window.electron.waitForNewFile(),
-        window.electron.selectFile(),
+        Backend.waitForNewFile(),
+        Backend.selectFile(),
       ]);
     } catch (error) {
       this.errorSelectingFile({ prevFilePath, error });

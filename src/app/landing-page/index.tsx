@@ -13,7 +13,7 @@ function LandingPageComp() {
       {/* TODO - allow to disable while selecting*/}
       <button
         disabled={fileSelectorStore.fileSelectingState === 'selecting'}
-        onClick={fileSelectorStore.selectFile}
+        onClick={() => fileSelectorStore.selectFile()}
       >
         Open file
       </button>

@@ -14,7 +14,13 @@
     "lint": "npx @biomejs/biome check --apply .",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
-    "test:perf": "node ./tests/performance/lighthouse.mjs - "
+    "test:perf": "node ./tests/performance/lighthouse.mjs - ",
+
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "tauri:dev": "RUSTFLAGS=-Awarnings tauri dev"
   },
   "keywords": [],
   "author": {
@@ -52,7 +58,8 @@
     "playwright": "^1.44.0",
     "puppeteer": "^22.10.0",
     "ts-node": "^10.9.1",
-    "typescript": "^5.0.2"
+    "typescript": "^5.0.2",
+    "@tauri-apps/cli": "^1"
   },
   "dependencies": {
     "ansicolor": "^2.0.1",
@@ -66,6 +73,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-window": "^1.8.9",
-    "react-window-infinite-loader": "^1.0.9"
+    "react-window-infinite-loader": "^1.0.9",
+    "@tauri-apps/api": "^1"
   }
 }

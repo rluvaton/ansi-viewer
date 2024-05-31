@@ -1,3 +1,4 @@
+import { register, unregister } from '@tauri-apps/api/globalShortcut';
 import { observer } from 'mobx-react-lite';
 import React, { useEffect } from 'react';
 import { FileParsedEvent } from '../shared-types';
@@ -33,9 +34,9 @@ function App() {
         filePath: string;
       }>,
     ) {
-      await Backend.selectFile({
-        filePath: message.detail.filePath,
-      });
+      await getContainer().fileSelectorStore.selectFile(
+        message.detail.filePath,
+      );
     }
 
     Backend.onFileSelected(onFileSelected);
@@ -46,11 +47,38 @@ function App() {
 
     window.addEventListener('tests-custom-file-select', customSelectFile);
 
+    async function registerHotKeys() {
+      await Promise.all([
+        // Open file
+        unregister('CmdOrControl+O'),
+
+        // Refresh
+        unregister('CmdOrControl+R'),
+      ]);
+
+      await Promise.all([
+        // Open file
+        register('CommandOrControl+O', () => {
+          console.log('Selecting file from hotkey');
+          getContainer().fileSelectorStore.selectFile();
+        }),
+        // Refresh
+        register('CommandOrControl+R', () => {
+          console.log('Reloading from hotkey');
+          getContainer().currentInstanceStore.refresh();
+        }),
+      ]);
+    }
+
+    registerHotKeys();
+
     return () => {
       Backend.offFileSelected(onFileSelected);
       Backend.offOpenGoTo(onGoTo);
       Backend.offHighlightCaretPosition(onHighlightCaretPosition);
       window.removeEventListener('tests-custom-file-select', customSelectFile);
+      unregister('CmdOrControl+O');
+      unregister('CmdOrControl+R');
     };
   }, []);
 

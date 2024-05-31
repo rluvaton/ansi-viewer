@@ -63,7 +63,7 @@ export class FileSelectorStore {
     }
   }
 
-  selectFile = async () => {
+  selectFile = async (filePathToSelect?: string) => {
     const prevState = this.fileSelectingState;
     const prevFilePath = this.currentFilePath;
 
@@ -71,10 +71,9 @@ export class FileSelectorStore {
     let selectedFileEvent: FileParsedEvent;
 
     try {
-      [selectedFileEvent] = await Promise.all([
-        Backend.waitForNewFile(),
-        Backend.selectFile(),
-      ]);
+      selectedFileEvent = await Backend.selectFile({
+        filePath: filePathToSelect,
+      });
     } catch (error) {
       this.errorSelectingFile({ prevFilePath, error });
       return;

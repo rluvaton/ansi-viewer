@@ -1,3 +1,4 @@
+import { fs, dialog, invoke, window } from '@tauri-apps/api';
 import {
   EmptyCallbackFunction,
   FileParsedEvent,
@@ -7,48 +8,75 @@ import {
   OnOpenGoToCallback,
   SelectFileRequest,
 } from '../../shared-types';
-
-export async function getLines(fromLine: number): Promise<Line[]> {
-  return await window.electron.getLines(fromLine);
-}
-
-export function listenToFileChunks(
-  filePathToRead: string,
-  cb: ListenToFileChunk,
-): void {
-  window.electron.listenToFileChunks(filePathToRead, cb);
-}
+import { LINES_BLOCK_SIZE } from '../../shared/constants';
+import { getContainer } from '../stores/stores-container';
 
 // --- General ---
-export function getWindowId(): number {
-  return window.electron.getWindowId();
+export function getWindowId(): string {
+  return window.appWindow.label;
+  // return window.electron.getWindowId().toString();
 }
 
 export function onSoftRefresh(cb: () => void): void {
-  window.electron.onSoftRefresh(cb);
+  console.log('onSoftRefresh');
+  // window.electron.onSoftRefresh(cb);
 }
 
 export function offSoftRefresh(cb: () => void): void {
-  window.electron.offSoftRefresh(cb);
+  console.log('offSoftRefresh');
+  // window.electron.offSoftRefresh(cb);
 }
 
 // --- File selection ---
-export function selectFile(data?: SelectFileRequest): Promise<string> {
-  return window.electron.selectFile(data);
+
+export async function selectFile(
+  data?: SelectFileRequest,
+): Promise<FileParsedEvent | null> {
+  let selectedFilePath = data?.filePath;
+
+  if (!selectedFilePath) {
+    selectedFilePath = await dialog.open({
+      multiple: false,
+      directory: false,
+      title: 'Select a file to view',
+
+      // TODO - remove this
+      defaultPath: '/Users/rluvaton/dev/personal/ansi-viewer/examples',
+    });
+
+    if (!selectedFilePath) {
+      return null;
+    }
+    // TODO - still send backend request that file selected
+    // return data.filePath;
+  }
+
+  // TODO - assert file selected
+
+  // TODO - notify the backend that a file was selected
+
+  return await invoke('open_file', { filePath: selectedFilePath });
+
+  // return selectedFilePath as string;
+  // return window.electron.selectFile(data);
 }
 
 export function onFileSelected(cb: OnFileSelectedCallback): void {
-  window.electron.onFileSelected(cb);
+  console.log('onFileSelected');
+  // window.electron.onFileSelected(cb);
 }
 export function offFileSelected(cb: OnFileSelectedCallback): void {
-  window.electron.offFileSelected(cb);
+  console.log('offFileSelected');
+  // window.electron.offFileSelected(cb);
 }
 export function windowInitialized(): void {
-  window.electron.windowInitialized();
+  console.log('windowInitialized');
+  // window.electron.windowInitialized();
 }
 
 export async function waitForNewFile(): Promise<FileParsedEvent | undefined> {
-  return await window.electron.waitForNewFile();
+  console.log('waitForNewFile');
+  // return await window.electron.waitForNewFile();
 }
 
 // --- Read file related ---
@@ -56,36 +84,49 @@ export function listenToFileChunks(
   filePathToRead: string,
   cb: ListenToFileChunk,
 ): void {
-  window.electron.listenToFileChunks(filePathToRead, cb);
+  console.log('listenToFileChunks');
+  // window.electron.listenToFileChunks(filePathToRead, cb);
 }
 
 export function cleanupFileChunkListener(
   filePathToRead: string,
   cb: ListenToFileChunk,
 ): void {
-  window.electron.cleanupFileChunkListener(filePathToRead, cb);
+  console.log('cleanupFileChunkListener');
+  // window.electron.cleanupFileChunkListener(filePathToRead, cb);
 }
 
 export function startReadingFile(filePathToRead: string): void {
-  window.electron.startReadingFile(filePathToRead);
+  console.log('startReadingFile');
+  // window.electron.startReadingFile(filePathToRead);
 }
 
 export function getLines(fromLine: number): Promise<Line[]> {
-  return window.electron.getLines(fromLine);
+  console.log('getLines');
+  return invoke('get_lines', {
+    filePath: getContainer().fileSelectorStore.currentFilePath,
+    fromLine,
+    toLine: fromLine + LINES_BLOCK_SIZE,
+  });
+  // return window.electron.getLines(fromLine);
 }
 
 export function onOpenGoTo(cb: OnOpenGoToCallback): void {
-  window.electron.onOpenGoTo(cb);
+  console.log('onOpenGoTo');
+  // window.electron.onOpenGoTo(cb);
 }
 
 export function offOpenGoTo(cb: OnOpenGoToCallback): void {
-  window.electron.offOpenGoTo(cb);
+  console.log('offOpenGoTo');
+  // window.electron.offOpenGoTo(cb);
 }
 
 export function onHighlightCaretPosition(cb: EmptyCallbackFunction): void {
-  window.electron.onHighlightCaretPosition(cb);
+  console.log('onHighlightCaretPosition');
+  // window.electron.onHighlightCaretPosition(cb);
 }
 
 export function offHighlightCaretPosition(cb: EmptyCallbackFunction): void {
-  window.electron.offHighlightCaretPosition(cb);
+  console.log('offHighlightCaretPosition');
+  // window.electron.offHighlightCaretPosition(cb);
 }

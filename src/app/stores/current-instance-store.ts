@@ -9,7 +9,7 @@ import { Backend } from '../services';
 
 export class CurrentInstanceStore {
   public _refreshKeyNumber = 0;
-  #currentWindowId: number;
+  #currentWindowId: string;
 
   public windowInnerHeight = window.innerHeight;
   public windowInnerWidth = window.innerWidth;
@@ -54,7 +54,7 @@ export class CurrentInstanceStore {
     return `${this._refreshKeyNumber}`;
   }
 
-  public get currentWindowId(): number {
+  public get currentWindowId(): string {
     return this.#currentWindowId;
   }
 }

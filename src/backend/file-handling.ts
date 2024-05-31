@@ -1,6 +1,6 @@
 import * as fs from 'node:fs/promises';
 import { BrowserWindow, dialog, ipcMain } from 'electron';
-import { FileParsedEvent } from '../shared-types';
+import { FileParsedEvent, SelectFileRequest } from '../shared-types';
 import { OpenedFileState } from './ansi-file/open-file-state';
 import { ParsedFileState } from './ansi-file/parsed-ansi-file';
 import { getWindowFromEvent, runFnAndLogDuration } from './helper';
@@ -74,8 +74,14 @@ async function assertFileAccessible(filePath: string) {
   }
 }
 
-ipcMain.handle('select-file', async (event) => {
-  return await openFile(getWindowFromEvent(event), true);
+ipcMain.handle('select-file', async (event, option: SelectFileRequest) => {
+  return await openFile(getWindowFromEvent(event), {
+    ...option,
+
+    // If no file path that requested from client, even thought both are from the client,
+    // when file path exists it's from the performance tests
+    requestedFromClient: !option.filePath,
+  });
 });
 
 // ipcMain.on('read-file-stream', async (event, filePath) => {
@@ -111,9 +117,14 @@ ipcMain.handle('select-file', async (event) => {
 
 export async function openFile(
   window: BrowserWindow,
-  requestedFromClient: boolean,
+  {
+    filePath,
+    requestedFromClient,
+  }: SelectFileRequest & { requestedFromClient: boolean },
 ) {
-  const filePath = await selectFile();
+  if (!filePath) {
+    filePath = await selectFile();
+  }
 
   return await openFilePath({ window, filePath, requestedFromClient });
 }

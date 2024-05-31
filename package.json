@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "npx @biomejs/biome check --apply .",
     "test:e2e": "playwright test",
-    "test:e2e:headed": "playwright test --headed"
+    "test:e2e:headed": "playwright test --headed",
+    "test:perf": "node ./tests/performance/lighthouse.mjs - "
   },
   "keywords": [],
   "author": {
@@ -47,6 +48,7 @@
     "electron-playwright-helpers": "^1.7.1",
     "lighthouse": "^12.0.0",
     "lint-staged": "^15.2.2",
+    "open": "^10.1.0",
     "playwright": "^1.44.0",
     "puppeteer": "^22.10.0",
     "ts-node": "^10.9.1",

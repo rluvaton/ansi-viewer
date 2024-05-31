@@ -5,6 +5,7 @@ import {
   ListenToFileChunk,
   OnFileSelectedCallback,
   OnOpenGoToCallback,
+  SelectFileRequest,
 } from './shared-types';
 
 declare global {
@@ -16,7 +17,7 @@ declare global {
       offSoftRefresh(cb: () => void): void;
 
       // --- File selection ---
-      selectFile(): Promise<string>;
+      selectFile(data?: SelectFileRequest): Promise<string>;
 
       onFileSelected(cb: OnFileSelectedCallback): void;
       windowInitialized(): void;

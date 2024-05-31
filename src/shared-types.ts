@@ -29,3 +29,8 @@ export type OnFileSelectedCallback = (
 ) => void;
 export type EmptyCallbackFunction = () => void;
 export type OnOpenGoToCallback = EmptyCallbackFunction;
+
+export interface SelectFileRequest {
+  // This is optional and used in the tests when can't use the dialog
+  filePath?: string;
+}

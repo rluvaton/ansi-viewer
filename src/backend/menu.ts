@@ -74,7 +74,7 @@ export function setupMainMenu() {
           async click(_, browser) {
             // TODO - catch missing access errors and open dialog with error
             // TODO - open window with the selected file if no window is open or replace the current one?
-            await openFile(browser, false);
+            await openFile(browser, { requestedFromClient: false });
           },
         },
       ],

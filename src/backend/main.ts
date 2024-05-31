@@ -50,7 +50,11 @@ const createWindow = () => {
 
 // TODO - move to different file
 let {
-  values: { file: filePathFromArgs, 'log-dest': logDest },
+  values: {
+    file: filePathFromArgs,
+    'log-dest': logDest,
+    'log-file-path': logFilePath,
+  },
 } = parseArgs({
   options: {
     file: {
@@ -61,11 +65,15 @@ let {
       type: 'string',
       default: 'stdout',
     },
+    'log-file-path': {
+      type: 'string',
+      default: undefined,
+    },
   },
   strict: false,
 });
 
-setLogDest(logDest as string);
+setLogDest(logDest as string, logFilePath as string);
 
 if (filePathFromArgs) {
   if (!path.isAbsolute(filePathFromArgs)) {

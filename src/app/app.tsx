@@ -27,16 +27,29 @@ function App() {
       getContainer().caretHighlightActionStore.highlightCurrentLocation();
     }
 
+    async function customSelectFile(
+      message: CustomEvent<{
+        filePath: string;
+      }>,
+    ) {
+      await window.electron.selectFile({
+        filePath: message.detail.filePath,
+      });
+    }
+
     window.electron.onFileSelected(onFileSelected);
     window.electron.onOpenGoTo(onGoTo);
     window.electron.onHighlightCaretPosition(onHighlightCaretPosition);
 
     window.electron.windowInitialized();
 
+    window.addEventListener('tests-custom-file-select', customSelectFile);
+
     return () => {
       window.electron.offFileSelected(onFileSelected);
       window.electron.offOpenGoTo(onGoTo);
       window.electron.offHighlightCaretPosition(onHighlightCaretPosition);
+      window.removeEventListener('tests-custom-file-select', customSelectFile);
     };
   }, []);
 

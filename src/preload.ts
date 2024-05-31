@@ -8,6 +8,7 @@ import {
   Line,
   OnFileSelectedCallback,
   OnOpenGoToCallback,
+  SelectFileRequest,
 } from './shared-types';
 
 contextBridge.exposeInMainWorld('electron', {
@@ -18,7 +19,8 @@ contextBridge.exposeInMainWorld('electron', {
   offSoftRefresh: (cb: () => void) => ipcRenderer.off('soft-refresh', cb),
 
   // --- File selection ---
-  selectFile: () => ipcRenderer.invoke('select-file'),
+  selectFile: (data: SelectFileRequest) =>
+    ipcRenderer.invoke('select-file', data),
 
   // From menu bar or keyboard shortcut
   onFileSelected: (cb: OnFileSelectedCallback) =>

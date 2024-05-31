@@ -56,3 +56,11 @@ fn get_lines(file_path: String, from_line: usize, to_line: usize) -> Vec<Line> {
 }
 
 // TODO - add create mapping file command, and return the path to the file, and everytime we scroll we should use it for fast parsing
+
+// TODO -
+//  On open file, create mapping file in the background
+//  On scroll, read the mapping file and get the lines if available or use the normal way
+
+// TODO -
+//  Add tests
+//  Add search

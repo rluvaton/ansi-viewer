@@ -1,4 +1,5 @@
 import { action, makeObservable, observable } from 'mobx';
+import React from 'react';
 import { FileParsedEvent, Line } from '../../shared-types';
 import { LINES_BLOCK_SIZE } from '../../shared/constants';
 import { LinesStorage } from '../lines-storage';
@@ -11,6 +12,8 @@ type CurrentFileState = 'idle' | 'reading' | 'read' | 'error';
 export class CurrentFileStore {
   fileContent: string | undefined;
   currentFileState: CurrentFileState = 'idle';
+
+  listRef: React.RefObject<HTMLDivElement>;
 
   commonStyleElement: HTMLStyleElement;
   linesStorage: LinesStorage = new LinesStorage(10);
@@ -35,12 +38,23 @@ export class CurrentFileStore {
     ) as HTMLStyleElement;
   }
 
+  registerList(ref: React.RefObject<HTMLDivElement>) {
+    this.listRef = ref;
+  }
+
+  unregisterList() {
+    this.listRef = null;
+  }
+
   reset() {
     this.resetAbortController.abort();
     this.resetAbortController = new AbortController();
     this.currentFileState = 'idle';
     this.fileContent = undefined;
     this.linesStorage.reset();
+
+    // TODO - maybe move this to the search store that it will listen to some change?
+    getContainer().searchActionStore.reset();
   }
 
   selectFile(event: FileParsedEvent, resetBefore = false) {
@@ -133,5 +147,9 @@ export class CurrentFileStore {
   // the generated class name is the one that in the common style, style element
   getLine(lineNumber: number): Line | undefined {
     return this.linesStorage.getLine(lineNumber);
+  }
+
+  get listInitialized() {
+    return !!this.listRef?.current;
   }
 }

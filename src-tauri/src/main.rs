@@ -19,7 +19,7 @@ fn greet(name: &str) -> String {
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![greet, test_app_handle, get_window_id, open_file, get_lines])
+        .invoke_handler(tauri::generate_handler![greet, test_app_handle, open_file, get_lines])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
@@ -34,15 +34,6 @@ struct Payload {
 #[tauri::command]
 async fn test_app_handle(app: tauri::AppHandle) {
     app.emit_all("event-name", Payload { message: "Tauri is awesome!".into() }).unwrap();
-}
-
-// make the command
-#[tauri::command]
-async fn get_window_id(app: tauri::AppHandle) -> String {
-    return "a".to_string();
-    // return app.get_window("").unwrap().id().to_string();
-    // return "window-id".to_string();
-    // app.emit_all("event-name", Payload { message: "Tauri is awesome!".into() }).unwrap();
 }
 
 #[tauri::command]

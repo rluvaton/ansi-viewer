@@ -24,6 +24,7 @@ pub fn open_file_cmd(file_path: String) -> Option<FileParsed> {
     let other = file_path.clone();
     let mapping_file_path = get_tmp_file_path();
 
+    // TODO - run in background and emit progress + result when done
     measure_fn_time(
         "create mapping file", ||
             create_mapping_file_from_input_path(

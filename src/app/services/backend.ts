@@ -4,6 +4,8 @@ import { Event } from '@tauri-apps/api/helpers/event';
 import {
   EmptyCallbackFunction,
   FileParsedEvent,
+  GetLinesInBlocksPayload,
+  GetLinesPayload,
   Line,
   ListenToFileChunk,
   MappingFileCreatedEvent,
@@ -116,16 +118,36 @@ export function startReadingFile(_filePathToRead: string): void {
 
 export function getLines(
   fromLine: number,
+  toLine: number,
   mappingFilePath?: string,
 ): Promise<Line[]> {
   console.log('getLines');
   return invoke('get_lines', {
-    filePath: getContainer().fileSelectorStore.currentFilePath,
-    fromLine,
-    toLine: fromLine + LINES_BLOCK_SIZE,
-    mappingFilePath,
+    data: {
+      file_path: getContainer().fileSelectorStore.currentFilePath,
+      from_line: Math.max(fromLine, 1),
+      to_line: toLine,
+      mapping_file_path: mappingFilePath,
+    } satisfies GetLinesPayload,
   });
   // return window.electron.getLines(fromLine);
+}
+
+export function getLinesInBlocks(
+  fromLine: number,
+  toLine: number,
+  mappingFilePath?: string,
+): Promise<Line[][]> {
+  console.log('getLinesInBlocks');
+  return invoke('get_lines_in_blocks', {
+    data: {
+      file_path: getContainer().fileSelectorStore.currentFilePath,
+      from_line: Math.max(fromLine, 1),
+      to_line: toLine,
+      mapping_file_path: mappingFilePath,
+      block_size: LINES_BLOCK_SIZE,
+    } satisfies GetLinesInBlocksPayload,
+  });
 }
 
 export function onOpenGoTo(_cb: OnOpenGoToCallback): void {

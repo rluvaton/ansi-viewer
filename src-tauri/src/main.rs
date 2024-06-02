@@ -8,9 +8,9 @@ mod log_helper;
 
 use std::fs::remove_file;
 use tauri::Manager;
-use crate::get_lines::get_lines_cmd;
+use crate::get_lines::{get_lines_cmd, get_lines_in_blocks_cmd};
 use crate::open_file::{open_file_cmd};
-use crate::serialize_to_client::{FileParsed, Line};
+use crate::serialize_to_client::{FileParsed, GetLinesInBlocksPayload, GetLinesPayload, Line};
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
@@ -20,7 +20,7 @@ fn greet(name: &str) -> String {
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![greet, test_app_handle, open_file, get_lines, remove_mapping_file])
+        .invoke_handler(tauri::generate_handler![greet, test_app_handle, open_file, get_lines, get_lines_in_blocks, remove_mapping_file])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
@@ -45,8 +45,14 @@ async fn open_file(window: tauri::Window, file_path: String) -> Option<FileParse
 
 // TODO - change to option if file does not exists or something
 #[tauri::command]
-async fn get_lines(file_path: String, from_line: usize, to_line: usize, mapping_file_path: Option<String>) -> Vec<Line> {
-    return get_lines_cmd(file_path, from_line, to_line, mapping_file_path);
+async fn get_lines(data: GetLinesPayload) -> Vec<Line> {
+    return get_lines_cmd(data.file_path, data.from_line, data.to_line, data.mapping_file_path);
+}
+
+// TODO - change to option if file does not exists or something
+#[tauri::command]
+async fn get_lines_in_blocks(data: GetLinesInBlocksPayload) -> Vec<Vec<Line>> {
+    return get_lines_in_blocks_cmd(data.file_path, data.from_line, data.to_line, data.mapping_file_path, data.block_size);
 }
 
 #[tauri::command]

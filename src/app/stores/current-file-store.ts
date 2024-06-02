@@ -3,6 +3,7 @@ import { FileParsedEvent, Line } from '../../shared-types';
 import { LINES_BLOCK_SIZE } from '../../shared/constants';
 import { LinesStorage } from '../lines-storage';
 import { Backend } from '../services';
+import { getLinesInBlocks } from '../services/backend';
 import { getContainer } from './stores-container';
 
 type CurrentFileState = 'idle' | 'reading' | 'read' | 'error';
@@ -60,7 +61,7 @@ export class CurrentFileStore {
     this.selectFile(
       {
         file_path: filePath,
-        first_lines: await Backend.getLines(0),
+        first_lines: await Backend.getLines(0, LINES_BLOCK_SIZE),
         total_lines: this.totalLines,
         global_style: this.commonStyleElement.innerHTML,
         requested_from_client: true,
@@ -108,14 +109,20 @@ export class CurrentFileStore {
     this.linesStorage.addBlocks(
       await Promise.all(
         Array.from({ length: numberOfBlocks }, (_, i) =>
-          // TODO - move the mapping file path to this class
           Backend.getLines(
-            startLineNumber + i * LINES_BLOCK_SIZE,
+            startLineNumber + i * LINES_BLOCK_SIZE + 1,
+            Math.min(
+              startLineNumber + (i + 1) * LINES_BLOCK_SIZE,
+              endLineNumber,
+            ),
+            // TODO - move the mapping file path to this class
             getContainer().fileSelectorStore.mappingFilePath,
           ),
         ),
       ),
     );
+
+    // this.linesStorage.addBlocks(await Backend.getLinesInBlocks(startLineNumber, endLineNumber, getContainer().fileSelectorStore.mappingFilePath));
   };
 
   // the generated class name is the one that in the common style, style element

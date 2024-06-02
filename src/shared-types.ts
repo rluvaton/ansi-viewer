@@ -43,3 +43,18 @@ export interface SelectFileRequest {
 export type OnMappingFileCreatedCallback = (
   event: MappingFileCreatedEvent,
 ) => void;
+
+export interface GetLinesPayload {
+  file_path: string;
+  from_line: number;
+  to_line: number;
+  mapping_file_path: string;
+}
+
+export interface GetLinesInBlocksPayload {
+  file_path: string;
+  from_line: number;
+  to_line: number;
+  mapping_file_path: string;
+  block_size: number;
+}

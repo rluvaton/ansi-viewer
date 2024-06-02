@@ -17,6 +17,23 @@ pub struct LinesChunk {
     pub lines: Vec<Line>,
 }
 
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+pub struct GetLinesPayload {
+    pub(crate) file_path: String,
+    pub(crate) from_line: usize,
+    pub(crate) to_line: usize,
+    pub(crate) mapping_file_path: Option<String>,
+}
+
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+pub struct GetLinesInBlocksPayload {
+    pub(crate) file_path: String,
+    pub(crate) from_line: usize,
+    pub(crate) to_line: usize,
+    pub(crate) mapping_file_path: Option<String>,
+    pub(crate) block_size: usize,
+}
+
 #[derive(Clone, Debug, serde::Serialize)]
 pub struct MappingFileCreated {
     pub mapping_file_path: String,

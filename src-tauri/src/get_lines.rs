@@ -12,7 +12,7 @@ use ansi_parser_extended::parse_file::types::ReadAnsiFileOptions;
 use crate::log_helper::measure_fn_time;
 use crate::serialize_to_client::{create_line_from_spans, Line};
 
-pub fn get_lines_cmd(file_path: String, from_line: usize, to_line: usize, mapping_file: Option<String>) -> Vec<Line> {
+pub fn get_ansi_file_lines(file_path: String, from_line: usize, to_line: usize, mapping_file: Option<String>) -> Box<dyn Iterator<Item=ansi_parser_extended::types::Line>> {
     let input_file_path = PathBuf::from(OsString::from(file_path.clone()));
 
     let mapping_file_string_desc = mapping_file.is_none()
@@ -46,16 +46,65 @@ pub fn get_lines_cmd(file_path: String, from_line: usize, to_line: usize, mappin
         parse_options,
     };
 
+    return Box::new(read_ansi_file_to_lines(options));
+}
+
+pub fn get_lines_cmd(file_path: String, from_line: usize, to_line: usize, mapping_file: Option<String>) -> Vec<Line> {
+
+    let mapping_file_string_desc = mapping_file.is_none()
+        .then(|| "without mapping file")
+        .unwrap_or_else(|| "with mapping file");
+
+    let iter = get_ansi_file_lines(file_path, from_line, to_line, mapping_file);
+
     let mut index = from_line;
 
     return measure_fn_time(
         format!("read ANSI file lines {}", mapping_file_string_desc).as_str(),
-        || read_ansi_file_to_lines(options)
+        || iter
             .map(|line| {
                 let line = create_line_from_spans(index, line.spans);
                 index += 1;
                 return line;
             })
             .collect::<Vec<Line>>(),
+    );
+}
+
+pub fn get_lines_in_blocks_cmd(file_path: String, from_line: usize, to_line: usize, mapping_file: Option<String>, block_size: usize) -> Vec<Vec<Line>> {
+    let mapping_file_string_desc = mapping_file.is_none()
+        .then(|| "without mapping file")
+        .unwrap_or_else(|| "with mapping file");
+
+    let iter = get_ansi_file_lines(file_path, from_line, to_line, mapping_file);
+
+    let mut index = from_line;
+
+    return measure_fn_time(
+        format!("read ANSI file lines {}", mapping_file_string_desc).as_str(),
+        || {
+            let mut blocks: Vec<Vec<Line>> = Vec::with_capacity(to_line - from_line / block_size + 1);
+            let mut current_block: Vec<Line> = Vec::with_capacity(block_size);
+
+            for line in iter {
+                index += 1;
+
+                if (current_block.len() == block_size) {
+                    blocks.push(current_block);
+                    current_block = Vec::with_capacity(block_size)
+                }
+
+                current_block.push(create_line_from_spans(index, line.spans))
+            }
+
+            if !current_block.is_empty() {
+                current_block.shrink_to_fit();
+                blocks.push(current_block);
+            }
+
+            blocks.shrink_to_fit();
+
+            return blocks;
+        },
     );
 }

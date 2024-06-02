@@ -76,7 +76,8 @@ export class LinesStorage {
 
     if (this.#lines.length > this.maxSize) {
       // TODO - should remove the one that in the other direction of scrolling
-      this.#lines.unshift();
+      // this.#lines.unshift();
+      this.#lines.splice(0, Math.max(this.#lines.length - this.maxSize, 0));
     }
   }
 

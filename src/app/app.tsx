@@ -59,6 +59,9 @@ function App() {
 
         // Refresh
         unregister('CmdOrControl+R'),
+
+        // Go to
+        unregister('CmdOrControl+G'),
       ]);
 
       await Promise.all([
@@ -71,6 +74,11 @@ function App() {
         register('CommandOrControl+R', () => {
           console.log('Reloading from hotkey');
           getContainer().currentInstanceStore.refresh();
+        }),
+        // Go To
+        register('CommandOrControl+G', () => {
+          console.log('Go to from hot key');
+          onGoTo();
         }),
       ]);
     }
@@ -85,6 +93,7 @@ function App() {
       window.removeEventListener('tests-custom-file-select', customSelectFile);
       unregister('CmdOrControl+O');
       unregister('CmdOrControl+R');
+      unregister('CmdOrControl+G');
     };
   }, []);
 

@@ -10,7 +10,7 @@ use std::fs::remove_file;
 use tauri::Manager;
 use crate::get_lines::get_lines_cmd;
 use crate::open_file::{open_file_cmd};
-use crate::serialize_to_client::{FileParsed, Line, LinesChunk};
+use crate::serialize_to_client::{FileParsed, Line};
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]

@@ -2,12 +2,11 @@ use ansi_parser_extended::parse_ansi_text::ansi::types::Span;
 
 #[derive(Clone, Debug, serde::Serialize)]
 pub struct FileParsed {
-    pub filePath: String,
-    pub totalLines: usize,
-    pub firstLines: Vec<Line>,
-    pub globalStyle: String,
-    pub requestedFromClient: bool,
-    pub mappingFilePath: String,
+    pub file_path: String,
+    pub total_lines: usize,
+    pub first_lines: Vec<Line>,
+    pub global_style: String,
+    pub requested_from_client: bool,
 }
 
 #[derive(Clone, Debug, serde::Serialize)]
@@ -19,8 +18,14 @@ pub struct LinesChunk {
 }
 
 #[derive(Clone, Debug, serde::Serialize)]
+pub struct MappingFileCreated {
+    pub mapping_file_path: String,
+    pub file_path: String,
+}
+
+#[derive(Clone, Debug, serde::Serialize)]
 pub struct Line {
-    pub lineIndex: usize,
+    pub line_index: usize,
     pub __html: String,
 }
 
@@ -51,7 +56,7 @@ pub fn create_line_from_spans(line_index: usize, items: Vec<Span>) -> Line {
 "####, line_index = line_index + 1, spans_as_string = spans_as_string);
 
     return Line {
-        lineIndex: line_index,
+        line_index: line_index,
         __html,
     };
 }

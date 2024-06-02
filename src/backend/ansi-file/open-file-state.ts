@@ -240,7 +240,7 @@ pre.${className} {
 function buildHtmlForItems(lineIndex: number, items: LineItem[]): Line {
   // Mark the inner pre as content-editable="true" so the user can navigate the text with the keyboard
   return {
-    lineIndex,
+    line_index: lineIndex,
     __html: `<code contenteditable="false" class="line-number noselect">${
       lineIndex + 1
     }</code><pre role="presentation" contenteditable="true" spellcheck="false" data-disable-content-edit data-line="${

@@ -1,5 +1,5 @@
 import { action, makeObservable, observable, reaction } from 'mobx';
-import { FileParsedEvent } from '../../shared-types';
+import { FileParsedEvent, MappingFileCreatedEvent } from '../../shared-types';
 import { Backend } from '../services';
 import { getContainer } from './stores-container';
 
@@ -21,6 +21,7 @@ export class FileSelectorStore {
       errorSelectingFile: action,
       errorReadingFile: action,
       setFileAsSelected: action,
+      onMappingFileCreated: action,
     });
 
     const { currentInstanceStore } = getContainer();
@@ -94,12 +95,12 @@ export class FileSelectorStore {
       filePath: string | undefined;
     },
   ) => {
-    if (!event?.filePath && prev) {
+    if (!event?.file_path && prev) {
       this.noFileSelected(prev.state, prev.filePath);
       return;
     }
 
-    this.setFileAsSelected(event.filePath, event.mappingFilePath);
+    this.setFileAsSelected(event.file_path);
     // TODO - while selecting file we should allow to select another file and abort the previous one
 
     try {
@@ -134,10 +135,24 @@ export class FileSelectorStore {
     this.mappingFilePath = undefined;
   }
 
-  setFileAsSelected(newFilePath: string, mappingFilePath?: string) {
+  setFileAsSelected(newFilePath: string) {
     this.currentFilePath = newFilePath;
     this.fileSelectingState = 'selected';
+  }
 
-    this.mappingFilePath = mappingFilePath;
+  async onMappingFileCreated(event: MappingFileCreatedEvent) {
+    console.log('Got mapping file created event', event);
+    if (this.currentFilePath !== event.file_path) {
+      console.warn('Mapping file created for different file', {
+        event,
+        current_file_path: this.currentFilePath,
+        mapping_file_path: this.mappingFilePath,
+      });
+
+      await Backend.removeMappingFile(event.mapping_file_path);
+      return;
+    }
+
+    this.mappingFilePath = event.mapping_file_path;
   }
 }

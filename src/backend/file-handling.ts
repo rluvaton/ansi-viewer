@@ -163,11 +163,11 @@ export async function openFilePath({
     name: 'Create file parsed event',
     fn: () =>
       ({
-        filePath,
-        totalLines: parsed.totalLines,
-        firstLines: parsed.getLinesSync(0),
-        globalStyle: parsed.commonStyle,
-        requestedFromClient,
+        file_path: filePath,
+        total_lines: parsed.totalLines,
+        first_lines: parsed.getLinesSync(0),
+        global_style: parsed.commonStyle,
+        requested_from_client: requestedFromClient,
       }) satisfies FileParsedEvent,
     logArgs: { filePath },
   });

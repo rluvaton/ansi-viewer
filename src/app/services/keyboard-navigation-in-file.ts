@@ -58,16 +58,18 @@ function setCaretPositionInLine(el: Node, column: number) {
       continue;
     }
 
+    const textNode = node as Text;
+
     // Text node
-    if (node.length < column) {
-      column -= node.length;
+    if (textNode.length < column) {
+      column -= textNode.length;
       continue;
     }
 
     // finally add our range
     const range = document.createRange();
     const sel = window.getSelection();
-    range.setStart(node, column);
+    range.setStart(textNode, column);
     range.collapse(true);
     sel.removeAllRanges();
     sel.addRange(range);
@@ -300,7 +302,7 @@ function shouldJumpToStartOfNextLine(_e: KeyboardEvent, range: Range) {
   }
 
   if (range.endContainer.nodeName === '#text') {
-    return range.endContainer.length === range.endOffset + 1;
+    return (range.endContainer as Text).length === range.endOffset + 1;
   }
 
   return false;

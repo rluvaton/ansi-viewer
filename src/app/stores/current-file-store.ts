@@ -49,135 +49,24 @@ export class CurrentFileStore {
       this.linesStorage.reset();
     }
 
-    this.linesStorage.addLines(event.firstLines);
-    this.totalLines = event.totalLines;
+    this.linesStorage.addLines(event.first_lines);
+    this.totalLines = event.total_lines;
     this.currentFileState = 'read';
     this.linesRerenderKey++;
-    this.commonStyleElement.innerHTML = event.globalStyle;
+    this.commonStyleElement.innerHTML = event.global_style;
   }
 
   async reselectSameFile(filePath: string) {
     this.selectFile(
       {
-        filePath,
-        firstLines: await Backend.getLines(0),
-        totalLines: this.totalLines,
-        globalStyle: this.commonStyleElement.innerHTML,
-        requestedFromClient: true,
+        file_path: filePath,
+        first_lines: await Backend.getLines(0),
+        total_lines: this.totalLines,
+        global_style: this.commonStyleElement.innerHTML,
+        requested_from_client: true,
       },
       true,
     );
-  }
-
-  private async *readFileIterator(filePathToRead: string) {
-    console.log('start reading file', filePathToRead);
-    this.setAsReading();
-
-    // Promise to wait for the next value to be ready
-    let resolve: (value: void) => void;
-    let reject: (reason?: any) => void;
-    let promise = new Promise((res, rej) => {
-      resolve = res;
-      reject = rej;
-    });
-
-    // Values that pile up until the iterator is ready to consume them
-    const values: string[] = [];
-    const valuesOutOfOrder: { index: number; value: string }[] = [];
-    let currentChunkIndex = -1;
-
-    let timeoutTimer: NodeJS.Timeout;
-
-    function fileStreamChunkListener(
-      _: unknown,
-      chunkIndex: number,
-      chunk: string,
-    ) {
-      clearTimeout(timeoutTimer);
-
-      timeoutTimer = setTimeout(() => {
-        const timeoutError = new Error(
-          `Timeout while reading file ${filePathToRead}`,
-        );
-        console.error(timeoutError.message, {
-          values: [...values],
-          valuesOutOfOrder: [...valuesOutOfOrder],
-          currentChunkIndex,
-          error: timeoutError,
-        });
-        reject(timeoutError);
-      }, 5000);
-
-      if (chunkIndex < currentChunkIndex + 1) {
-        // We already read this chunk, ignore it
-        return;
-      }
-
-      // We can receive chunks in the wrong order that was sent, so we need to sort them
-      if (chunkIndex === currentChunkIndex + 1) {
-        currentChunkIndex++;
-        values.push(chunk);
-
-        while (
-          valuesOutOfOrder.length > 0 &&
-          valuesOutOfOrder[0].index === currentChunkIndex + 1
-        ) {
-          currentChunkIndex++;
-          values.push(valuesOutOfOrder.shift()?.value);
-        }
-
-        // TODO - handle errors and back-pressure
-        resolve();
-      } else {
-        valuesOutOfOrder.push({ index: chunkIndex, value: chunk });
-
-        // Sort by index
-        valuesOutOfOrder.sort((a, b) => a.index - b.index);
-      }
-    }
-
-    // Attach the listener before reading the file to avoid missing data
-    Backend.listenToFileChunks(filePathToRead, fileStreamChunkListener);
-    Backend.startReadingFile(filePathToRead);
-
-    function onAbort() {
-      reject('Aborted');
-    }
-
-    this.resetAbortController.signal.addEventListener('abort', onAbort, {
-      once: true,
-    });
-
-    try {
-      while (true) {
-        // Waiting for the next value to be ready
-        await promise;
-
-        // Reset the promise for the next value
-        promise = new Promise((res, rej) => {
-          resolve = res;
-          reject = rej;
-        });
-
-        // Copy the values to a new array and clear the original so we won't re-read them
-        const valuesCopy = [...values];
-        values.length = 0;
-
-        // Yield the values
-        for (const value of valuesCopy) {
-          // null means we reached the end of the file
-          if (value === null) {
-            return;
-          }
-
-          yield value;
-        }
-      }
-    } finally {
-      clearTimeout(timeoutTimer);
-      Backend.cleanupFileChunkListener(filePathToRead, fileStreamChunkListener);
-      this.resetAbortController.signal.removeEventListener('abort', onAbort);
-    }
   }
 
   setAsReading() {

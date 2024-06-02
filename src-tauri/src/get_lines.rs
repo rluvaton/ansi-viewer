@@ -21,6 +21,7 @@ pub fn get_lines_cmd(file_path: String, from_line: usize, to_line: usize, mappin
 
     let middle_of_file_info = measure_fn_time(
         format!("Get middle of file info {}", mapping_file_string_desc).as_str(),
+        // TODO - check before if from line and to line exists
         || get_from_middle_of_the_file_info(input_file_path, Some(from_line), Some(to_line), mapping_file),
     );
 

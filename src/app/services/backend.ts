@@ -1,15 +1,24 @@
 import { fs, dialog, invoke, window } from '@tauri-apps/api';
+import { UnlistenFn, listen } from '@tauri-apps/api/event';
+import { Event } from '@tauri-apps/api/helpers/event';
 import {
   EmptyCallbackFunction,
   FileParsedEvent,
   Line,
   ListenToFileChunk,
+  MappingFileCreatedEvent,
   OnFileSelectedCallback,
+  OnMappingFileCreatedCallback,
   OnOpenGoToCallback,
   SelectFileRequest,
 } from '../../shared-types';
 import { LINES_BLOCK_SIZE } from '../../shared/constants';
 import { getContainer } from '../stores/stores-container';
+
+const listenersToUnlistenPromises = new WeakMap<
+  (...args: unknown[]) => any,
+  Promise<UnlistenFn>
+>();
 
 // --- General ---
 export function getWindowId(): string {
@@ -17,12 +26,12 @@ export function getWindowId(): string {
   // return window.electron.getWindowId().toString();
 }
 
-export function onSoftRefresh(cb: () => void): void {
+export function onSoftRefresh(_cb: () => void): void {
   console.log('onSoftRefresh');
   // window.electron.onSoftRefresh(cb);
 }
 
-export function offSoftRefresh(cb: () => void): void {
+export function offSoftRefresh(_cb: () => void): void {
   console.log('offSoftRefresh');
   // window.electron.offSoftRefresh(cb);
 }
@@ -35,7 +44,7 @@ export async function selectFile(
   let selectedFilePath = data?.filePath;
 
   if (!selectedFilePath) {
-    selectedFilePath = await dialog.open({
+    const selectedFilePathResult = await dialog.open({
       multiple: false,
       directory: false,
       title: 'Select a file to view',
@@ -44,9 +53,11 @@ export async function selectFile(
       defaultPath: '/Users/rluvaton/dev/personal/ansi-viewer/examples',
     });
 
-    if (!selectedFilePath) {
+    if (!selectedFilePathResult) {
       return null;
     }
+
+    selectedFilePath = selectedFilePathResult as string;
     // TODO - still send backend request that file selected
     // return data.filePath;
   }
@@ -61,42 +72,44 @@ export async function selectFile(
   // return window.electron.selectFile(data);
 }
 
-export function onFileSelected(cb: OnFileSelectedCallback): void {
+export function onFileSelected(_cb: OnFileSelectedCallback): void {
   console.log('onFileSelected');
   // window.electron.onFileSelected(cb);
 }
-export function offFileSelected(cb: OnFileSelectedCallback): void {
+
+export function offFileSelected(_cb: OnFileSelectedCallback): void {
   console.log('offFileSelected');
   // window.electron.offFileSelected(cb);
 }
+
 export function windowInitialized(): void {
   console.log('windowInitialized');
   // window.electron.windowInitialized();
 }
-
-export async function waitForNewFile(): Promise<FileParsedEvent | undefined> {
-  console.log('waitForNewFile');
-  // return await window.electron.waitForNewFile();
-}
+//
+// export async function waitForNewFile(): Promise<FileParsedEvent | undefined> {
+//   console.log('waitForNewFile');
+//   // return await window.electron.waitForNewFile();
+// }
 
 // --- Read file related ---
 export function listenToFileChunks(
-  filePathToRead: string,
-  cb: ListenToFileChunk,
+  _filePathToRead: string,
+  _cb: ListenToFileChunk,
 ): void {
   console.log('listenToFileChunks');
   // window.electron.listenToFileChunks(filePathToRead, cb);
 }
 
 export function cleanupFileChunkListener(
-  filePathToRead: string,
-  cb: ListenToFileChunk,
+  _filePathToRead: string,
+  _cb: ListenToFileChunk,
 ): void {
   console.log('cleanupFileChunkListener');
   // window.electron.cleanupFileChunkListener(filePathToRead, cb);
 }
 
-export function startReadingFile(filePathToRead: string): void {
+export function startReadingFile(_filePathToRead: string): void {
   console.log('startReadingFile');
   // window.electron.startReadingFile(filePathToRead);
 }
@@ -115,22 +128,50 @@ export function getLines(
   // return window.electron.getLines(fromLine);
 }
 
-export function onOpenGoTo(cb: OnOpenGoToCallback): void {
+export function onOpenGoTo(_cb: OnOpenGoToCallback): void {
   console.log('onOpenGoTo');
   // window.electron.onOpenGoTo(cb);
 }
 
-export function offOpenGoTo(cb: OnOpenGoToCallback): void {
+export function offOpenGoTo(_cb: OnOpenGoToCallback): void {
   console.log('offOpenGoTo');
   // window.electron.offOpenGoTo(cb);
 }
 
-export function onHighlightCaretPosition(cb: EmptyCallbackFunction): void {
+export function onHighlightCaretPosition(_cb: EmptyCallbackFunction): void {
   console.log('onHighlightCaretPosition');
   // window.electron.onHighlightCaretPosition(cb);
 }
 
-export function offHighlightCaretPosition(cb: EmptyCallbackFunction): void {
+export function offHighlightCaretPosition(_cb: EmptyCallbackFunction): void {
   console.log('offHighlightCaretPosition');
   // window.electron.offHighlightCaretPosition(cb);
+}
+
+export function onMappingFileCreated(cb: OnMappingFileCreatedCallback): void {
+  console.log('onMappingFileCreated');
+
+  const unlisten = listen(
+    'mapping-file-created',
+    function wrapper(event: Event<MappingFileCreatedEvent>) {
+      return cb(event.payload);
+    },
+  );
+
+  listenersToUnlistenPromises.set(cb, unlisten);
+}
+
+export function offMappingFileCreated(cb: OnMappingFileCreatedCallback): void {
+  console.log('offMappingFileCreated');
+
+  const unlistenPromise = listenersToUnlistenPromises.get(cb);
+  if (unlistenPromise) {
+    unlistenPromise.then((unlisten) => unlisten());
+  }
+}
+
+export async function removeMappingFile(
+  mappingFilePath: string,
+): Promise<void> {
+  return await invoke('remove_mapping_file', { mappingFilePath });
 }

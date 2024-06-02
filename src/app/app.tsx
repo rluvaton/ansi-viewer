@@ -1,7 +1,7 @@
 import { register, unregister } from '@tauri-apps/api/globalShortcut';
 import { observer } from 'mobx-react-lite';
 import React, { useEffect } from 'react';
-import { FileParsedEvent } from '../shared-types';
+import { FileParsedEvent, MappingFileCreatedEvent } from '../shared-types';
 import { AnsiViewerPage } from './ansi-viewer/page';
 import { LandingPage } from './landing-page';
 import { Backend, KeyboardNavigationInFileService } from './services';
@@ -14,7 +14,7 @@ function App() {
   useEffect(() => {
     function onFileSelected(_electronEvent: unknown, event: FileParsedEvent) {
       // Ignore events that were triggered by the client to avoid duplicate parsing
-      if (event.requestedFromClient) {
+      if (event.requested_from_client) {
         return;
       }
 
@@ -39,9 +39,14 @@ function App() {
       );
     }
 
+    function onMappingFileCreated(event: MappingFileCreatedEvent) {
+      getContainer().fileSelectorStore.onMappingFileCreated(event);
+    }
+
     Backend.onFileSelected(onFileSelected);
     Backend.onOpenGoTo(onGoTo);
     Backend.onHighlightCaretPosition(onHighlightCaretPosition);
+    Backend.onMappingFileCreated(onMappingFileCreated);
 
     Backend.windowInitialized();
 
@@ -74,6 +79,7 @@ function App() {
 
     return () => {
       Backend.offFileSelected(onFileSelected);
+      Backend.offMappingFileCreated(onMappingFileCreated);
       Backend.offOpenGoTo(onGoTo);
       Backend.offHighlightCaretPosition(onHighlightCaretPosition);
       window.removeEventListener('tests-custom-file-select', customSelectFile);

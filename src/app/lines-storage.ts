@@ -21,14 +21,14 @@ export class LinesStorage {
       return;
     }
 
-    const newFirstLine = lines[0].lineIndex;
-    const newLastLine = lines[lines.length - 1].lineIndex;
+    const newFirstLine = lines[0].line_index;
+    const newLastLine = lines[lines.length - 1].line_index;
 
     // can be either overlapping or
-    const currentFirstLine = this.#lines[0][0].lineIndex;
+    const currentFirstLine = this.#lines[0][0].line_index;
     const lastSavedLinesBlock = this.#lines[this.#lines.length - 1];
     const currentLastLine =
-      lastSavedLinesBlock[lastSavedLinesBlock.length - 1].lineIndex;
+      lastSavedLinesBlock[lastSavedLinesBlock.length - 1].line_index;
 
     if (newFirstLine > currentLastLine) {
       // add to the end
@@ -51,7 +51,7 @@ export class LinesStorage {
     // if the last line of the current block is after the first line of the new block
     // which means that the found index represents a block that is after the new block
     const theLineIndexThatShouldBeAfterNewBlock = this.#lines.findIndex(
-      (lines) => lines[lines.length - 1].lineIndex > newFirstLine,
+      (lines) => lines[lines.length - 1].line_index > newFirstLine,
     );
     if (theLineIndexThatShouldBeAfterNewBlock === -1) {
       throw new Error(
@@ -62,7 +62,7 @@ export class LinesStorage {
     // if the first line of the current block is BEFORE the last line of the new block
     // which means that the found index represents a block that is after the new block
     const theLineIndexThatShouldBeBeforeNewBlock = this.#lines.findIndex(
-      (lines) => lines[0].lineIndex < newLastLine,
+      (lines) => lines[0].line_index < newLastLine,
     );
 
     if (theLineIndexThatShouldBeBeforeNewBlock === -1) {
@@ -97,7 +97,7 @@ export class LinesStorage {
       return;
     }
 
-    const lineIndexInBlock = lineNumber - linesBlock[0].lineIndex;
+    const lineIndexInBlock = lineNumber - linesBlock[0].line_index;
 
     return linesBlock[lineIndexInBlock];
   }
@@ -109,8 +109,8 @@ export class LinesStorage {
   getLinesBlock(lineNumber: number) {
     return this.#lines.find(
       (lines) =>
-        lines[0].lineIndex <= lineNumber &&
-        lines[lines.length - 1].lineIndex >= lineNumber,
+        lines[0].line_index <= lineNumber &&
+        lines[lines.length - 1].line_index >= lineNumber,
     );
   }
 }

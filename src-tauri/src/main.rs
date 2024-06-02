@@ -6,6 +6,7 @@ pub mod serialize_to_client;
 pub mod get_lines;
 mod log_helper;
 
+use std::fs::remove_file;
 use tauri::Manager;
 use crate::get_lines::get_lines_cmd;
 use crate::open_file::{open_file_cmd};
@@ -19,7 +20,7 @@ fn greet(name: &str) -> String {
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![greet, test_app_handle, open_file, get_lines])
+        .invoke_handler(tauri::generate_handler![greet, test_app_handle, open_file, get_lines, remove_mapping_file])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
@@ -37,15 +38,25 @@ async fn test_app_handle(app: tauri::AppHandle) {
 }
 
 #[tauri::command]
-async fn open_file(file_path: String) -> Option<FileParsed> {
+async fn open_file(window: tauri::Window, file_path: String) -> Option<FileParsed> {
     // TODO - should create mapping file in different thread
-    return open_file_cmd(file_path);
+    return open_file_cmd(window, file_path);
 }
 
 // TODO - change to option if file does not exists or something
 #[tauri::command]
 async fn get_lines(file_path: String, from_line: usize, to_line: usize, mapping_file_path: Option<String>) -> Vec<Line> {
     return get_lines_cmd(file_path, from_line, to_line, mapping_file_path);
+}
+
+#[tauri::command]
+async fn remove_mapping_file(mapping_file_path: String) {
+    let result = remove_file(mapping_file_path);
+
+    if result.is_err() {
+        let error = result.err().expect("error");
+        println!("Failed to remove mapping file: {:?}", error);
+    }
 }
 
 // TODO - add create mapping file command, and return the path to the file, and everytime we scroll we should use it for fast parsing

@@ -47,7 +47,7 @@ test.describe('File Scrolling', () => {
   });
 
   test('should handle scrolling performance for large files', async () => {
-    const { app, page } = await openElectronApp();
+    const { app } = await openElectronApp();
 
     // Assuming the app can load and display large files
     // This test should load a large file, simulate user scrolling, and verify that performance is acceptable

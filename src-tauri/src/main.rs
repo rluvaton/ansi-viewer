@@ -46,13 +46,15 @@ async fn get_window_id(app: tauri::AppHandle) -> String {
 
 #[tauri::command]
 fn open_file(file_path: String) -> Option<FileParsed> {
+    // TODO - should create mapping file in different thread
     return open_file_cmd(file_path);
 }
 
 // TODO - change to option if file does not exists or something
 #[tauri::command]
 fn get_lines(file_path: String, from_line: usize, to_line: usize) -> Vec<Line> {
-    return get_lines_cmd(file_path, from_line, to_line);
+    // TODO - change
+    return get_lines_cmd(file_path, from_line, to_line, None);
 }
 
 // TODO - add create mapping file command, and return the path to the file, and everytime we scroll we should use it for fast parsing

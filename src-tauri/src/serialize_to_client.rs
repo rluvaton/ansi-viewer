@@ -38,7 +38,6 @@ pub struct GetLinesInBlocksPayload {
 pub struct SearchInFilePayload {
     pub(crate) file_path: String,
     pub(crate) query: String,
-    pub(crate) slower: bool,
 }
 
 #[derive(Clone, Debug, serde::Serialize)]

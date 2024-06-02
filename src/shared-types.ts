@@ -58,3 +58,10 @@ export interface GetLinesInBlocksPayload {
   mapping_file_path: string;
   block_size: number;
 }
+
+export interface SearchResult {
+  line_number: number;
+  column: number;
+}
+
+export type SearchResults = SearchResult[];

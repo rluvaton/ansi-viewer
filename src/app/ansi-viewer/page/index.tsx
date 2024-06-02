@@ -1,17 +1,14 @@
 import { observer } from 'mobx-react-lite';
 import React from 'react';
 
-import { GoToActionSizeHelper, GoToPopUp } from '../../actions';
+import { GoToActionSizeHelper, GoToPopUp, SearchPopUp } from '../../actions';
 import { CaretPositionPageMask } from '../../actions/highlight-caret-position';
 import { getContainer } from '../../stores/stores-container';
 import { LargeAnsiFileViewer } from '../large-file-viewer';
-import { useCopyANSI } from './use-copy-ansi';
 
 function AnsiViewerPageComp() {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const { currentInstanceStore } = getContainer();
-
-  useCopyANSI(containerRef);
 
   return (
     <div ref={containerRef}>
@@ -23,6 +20,9 @@ function AnsiViewerPageComp() {
       />
 
       <GoToPopUp key={'go-to-popup-' + currentInstanceStore.refreshKey} />
+      <SearchPopUp key={'search-popup-' + currentInstanceStore.refreshKey} />
+
+      {/*TODO - highlight search locations*/}
       <LargeAnsiFileViewer
         key={'large-viewer-' + currentInstanceStore.refreshKey}
       />

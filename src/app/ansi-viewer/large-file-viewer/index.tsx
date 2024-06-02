@@ -33,6 +33,13 @@ function LargeAnsiFileViewerComp() {
     setCaretPosition(contentRef.current, 1, 0);
   }, []);
 
+  //
+  // useEffect(() => {
+  //     if (currentFileStore.highlightedLocation.length === 0) {
+  //         highlight.clear();
+  //     }
+  // }, [currentFileStore.highlightedLocation]);
+
   return (
     <div
       ref={contentRef}

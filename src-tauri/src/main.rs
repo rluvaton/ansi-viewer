@@ -72,7 +72,7 @@ async fn remove_mapping_file(mapping_file_path: String) {
 // TODO - change to option if file does not exists or something
 #[tauri::command]
 async fn search_in_file(data: SearchInFilePayload) -> Vec<SearchResult> {
-    return search_file(data.file_path, data.query, data.slower);
+    return search_file(data.file_path, data.query);
 }
 
 // TODO - add create mapping file command, and return the path to the file, and everytime we scroll we should use it for fast parsing

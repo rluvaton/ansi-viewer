@@ -25,6 +25,10 @@ function App() {
       getContainer().goToActionStore.openGoTo();
     }
 
+    function onSearch() {
+      getContainer().searchActionStore.openSearch();
+    }
+
     function onHighlightCaretPosition() {
       getContainer().caretHighlightActionStore.highlightCurrentLocation();
     }
@@ -62,6 +66,9 @@ function App() {
 
         // Go to
         unregister('CmdOrControl+G'),
+
+        // Search
+        unregister('CmdOrControl+F'),
       ]);
 
       await Promise.all([
@@ -80,6 +87,11 @@ function App() {
           console.log('Go to from hot key');
           onGoTo();
         }),
+        // Search
+        register('CommandOrControl+F', () => {
+          console.log('Find from hot key');
+          onSearch();
+        }),
       ]);
     }
 
@@ -94,6 +106,7 @@ function App() {
       unregister('CmdOrControl+O');
       unregister('CmdOrControl+R');
       unregister('CmdOrControl+G');
+      unregister('CmdOrControl+F');
     };
   }, []);
 

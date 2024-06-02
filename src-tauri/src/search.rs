@@ -17,7 +17,7 @@ pub struct SearchResult {
     pub column_number: usize,
 }
 
-pub fn search_file(file_path: String, query: String, slower: bool) -> Vec<SearchResult> {
+pub fn search_file(file_path: String, query: String) -> Vec<SearchResult> {
     let matcher = RegexMatcher::new(query.as_str()).expect("invalid regex");
     let mut matches: Vec<SearchResult> = vec![];
 
@@ -34,7 +34,8 @@ pub fn search_file(file_path: String, query: String, slower: bool) -> Vec<Search
                 let mymatch = matcher.find(line.as_bytes()).unwrap();
 
                 matches.push(SearchResult {
-                    line_number: lnum,
+                    // Line numbers are 1-indexed.
+                    line_number: lnum + 1,
                     column_number: mymatch.unwrap().start(),
                 });
                 Ok(true)

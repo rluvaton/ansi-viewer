@@ -7,16 +7,48 @@
 }
 
 .ansiContainer :global(.line-number) {
-        text-align: right;
-        margin-right: 10px;
-        margin-left: 10px;
-        color: #999;
-        font-size: 12px;
-        font-family: monospace;
+    /* TODO - all text should start from the same column even when there are line numbers with different length */
+    text-align: right;
+    margin-right: 10px;
+    margin-left: 10px;
+    color: #999;
+    font-size: 12px;
+    font-family: monospace;
 }
+
+.highlightLine {
+    background-color: yellow;
+    /* TODO - instead wrap with border and don't change background*/
+    color: black;
+}
+
+/* TODO - move line highlighting from index.html */
 
 /* nowrap exists, even though WebStorm says it doesn't: https://developer.mozilla.org/en-US/docs/Web/CSS/text-wrap#nowrap '*/
 /*noinspection ALL*/
-.ansiContainer .line {
+.line {
     text-wrap: nowrap;
+}
+
+.lineHighlightContainer {
+    /* TODO - avoid line number */
+
+    /*TODO - change this to be 100% or something while keeping the */
+    height: 100%;
+    width: fit-content;
+    top: 2px;
+
+    /* Start of the line content without the line number (TODO - avoid this hard coded) */
+    left: 26px;
+    position: absolute;
+    /*border: 1px solid red;*/
+
+    font-family: monospace;
+    color: transparent;
+    font-size: 13px;
+
+}
+
+.lineHighlightContainer::selection {
+    color: transparent;
 }

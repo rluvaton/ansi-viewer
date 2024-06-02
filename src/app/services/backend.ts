@@ -12,6 +12,8 @@ import {
   OnFileSelectedCallback,
   OnMappingFileCreatedCallback,
   OnOpenGoToCallback,
+  SearchResult,
+  SearchResults,
   SelectFileRequest,
 } from '../../shared-types';
 import { LINES_BLOCK_SIZE } from '../../shared/constants';
@@ -202,7 +204,7 @@ export async function removeMappingFile(
 export async function searchInFile(
   file_path: string,
   query: string,
-): Promise<number[]> {
+): Promise<SearchResults> {
   return await invoke('search_in_file', {
     data: {
       file_path,

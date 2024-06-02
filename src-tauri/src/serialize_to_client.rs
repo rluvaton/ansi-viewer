@@ -34,6 +34,13 @@ pub struct GetLinesInBlocksPayload {
     pub(crate) block_size: usize,
 }
 
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+pub struct SearchInFilePayload {
+    pub(crate) file_path: String,
+    pub(crate) query: String,
+    pub(crate) slower: bool,
+}
+
 #[derive(Clone, Debug, serde::Serialize)]
 pub struct MappingFileCreated {
     pub mapping_file_path: String,

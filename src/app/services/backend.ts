@@ -88,6 +88,7 @@ export function windowInitialized(): void {
   console.log('windowInitialized');
   // window.electron.windowInitialized();
 }
+
 //
 // export async function waitForNewFile(): Promise<FileParsedEvent | undefined> {
 //   console.log('waitForNewFile');
@@ -196,4 +197,16 @@ export async function removeMappingFile(
   mappingFilePath: string,
 ): Promise<void> {
   return await invoke('remove_mapping_file', { mappingFilePath });
+}
+
+export async function searchInFile(
+  file_path: string,
+  query: string,
+): Promise<number[]> {
+  return await invoke('search_in_file', {
+    data: {
+      file_path,
+      query,
+    },
+  });
 }

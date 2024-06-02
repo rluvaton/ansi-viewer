@@ -68,9 +68,9 @@ dependencies = [
 
 [[package]]
 name = "ansi_parser_extended"
-version = "0.1.6"
+version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f67daee397412d48a16cb9dea7edcec053408ad2f179b9dc433e32acd15c6746"
+checksum = "be7a8b3fc24329afbfe4f0d6604cd3f9202c8fc617d9c215ab3ea6a0366b0e16"
 dependencies = [
  "ansi-parser",
  "atoi",

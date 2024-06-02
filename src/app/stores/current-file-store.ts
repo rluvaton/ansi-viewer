@@ -103,6 +103,11 @@ export class CurrentFileStore {
     const numberOfBlocks = Math.ceil(
       (endLineNumber - startLineNumber) / LINES_BLOCK_SIZE,
     );
+    if (this.isLineNumberLoaded(startLineNumber)) {
+      throw new Error(`Line number ${startLineNumber} is already loaded`);
+    } else if (this.isLineNumberLoaded(endLineNumber)) {
+      throw new Error(`Line number ${endLineNumber} is already loaded`);
+    }
 
     console.log(`Load more lines from: ${startLineNumber} to ${endLineNumber}`);
 
@@ -110,10 +115,10 @@ export class CurrentFileStore {
       await Promise.all(
         Array.from({ length: numberOfBlocks }, (_, i) =>
           Backend.getLines(
-            startLineNumber + i * LINES_BLOCK_SIZE + 1,
+            startLineNumber + i * LINES_BLOCK_SIZE,
             Math.min(
-              startLineNumber + (i + 1) * LINES_BLOCK_SIZE,
-              endLineNumber,
+              startLineNumber + (i + 1) * LINES_BLOCK_SIZE - 1,
+              this.totalLines,
             ),
             // TODO - move the mapping file path to this class
             getContainer().fileSelectorStore.mappingFilePath,
@@ -122,7 +127,7 @@ export class CurrentFileStore {
       ),
     );
 
-    // this.linesStorage.addBlocks(await Backend.getLinesInBlocks(startLineNumber, endLineNumber, getContainer().fileSelectorStore.mappingFilePath));
+    // this.linesStorage.addBlocks(await Backend.getLinesInBlocks(startLineNumber, startLineNumber + numberOfBlocks * LINES_BLOCK_SIZE, getContainer().fileSelectorStore.mappingFilePath));
   };
 
   // the generated class name is the one that in the common style, style element

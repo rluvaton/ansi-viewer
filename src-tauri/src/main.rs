@@ -4,6 +4,7 @@
 pub mod open_file;
 pub mod serialize_to_client;
 pub mod get_lines;
+mod log_helper;
 
 use tauri::Manager;
 use crate::get_lines::get_lines_cmd;
@@ -45,16 +46,15 @@ async fn get_window_id(app: tauri::AppHandle) -> String {
 }
 
 #[tauri::command]
-fn open_file(file_path: String) -> Option<FileParsed> {
+async fn open_file(file_path: String) -> Option<FileParsed> {
     // TODO - should create mapping file in different thread
     return open_file_cmd(file_path);
 }
 
 // TODO - change to option if file does not exists or something
 #[tauri::command]
-fn get_lines(file_path: String, from_line: usize, to_line: usize) -> Vec<Line> {
-    // TODO - change
-    return get_lines_cmd(file_path, from_line, to_line, None);
+async fn get_lines(file_path: String, from_line: usize, to_line: usize, mapping_file_path: Option<String>) -> Vec<Line> {
+    return get_lines_cmd(file_path, from_line, to_line, mapping_file_path);
 }
 
 // TODO - add create mapping file command, and return the path to the file, and everytime we scroll we should use it for fast parsing

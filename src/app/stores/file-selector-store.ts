@@ -7,11 +7,13 @@ type FileSelectingState = 'idle' | 'selecting' | 'selected' | 'error';
 
 export class FileSelectorStore {
   public currentFilePath: string | undefined;
+  public mappingFilePath: string | undefined;
   public fileSelectingState: FileSelectingState = 'idle';
 
   constructor(cleanupSignal: AbortSignal) {
     makeObservable(this, {
       currentFilePath: observable,
+      mappingFilePath: observable,
       fileSelectingState: observable,
       refresh: action,
       selectFile: action,
@@ -97,7 +99,7 @@ export class FileSelectorStore {
       return;
     }
 
-    this.setFileAsSelected(event.filePath);
+    this.setFileAsSelected(event.filePath, event.mappingFilePath);
     // TODO - while selecting file we should allow to select another file and abort the previous one
 
     try {
@@ -121,6 +123,7 @@ export class FileSelectorStore {
     console.error('Error while selecting file', error);
     this.fileSelectingState = 'error';
     this.currentFilePath = undefined;
+    this.mappingFilePath = undefined;
   }
 
   errorReadingFile(error: unknown) {
@@ -128,10 +131,13 @@ export class FileSelectorStore {
     console.error('Error while reading file', error);
     this.fileSelectingState = 'error';
     this.currentFilePath = undefined;
+    this.mappingFilePath = undefined;
   }
 
-  setFileAsSelected(newFilePath: string) {
+  setFileAsSelected(newFilePath: string, mappingFilePath?: string) {
     this.currentFilePath = newFilePath;
     this.fileSelectingState = 'selected';
+
+    this.mappingFilePath = mappingFilePath;
   }
 }

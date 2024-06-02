@@ -7,6 +7,7 @@ pub struct FileParsed {
     pub firstLines: Vec<Line>,
     pub globalStyle: String,
     pub requestedFromClient: bool,
+    pub mappingFilePath: String,
 }
 
 #[derive(Clone, Debug, serde::Serialize)]
@@ -17,18 +18,14 @@ pub struct LinesChunk {
     pub lines: Vec<Line>,
 }
 
-
-
 #[derive(Clone, Debug, serde::Serialize)]
 pub struct Line {
     pub lineIndex: usize,
     pub __html: String,
 }
 
-//function buildHtmlForItems(lineIndex: number, items: LineItem[]): Line {
 pub fn create_line_from_spans(line_index: usize, items: Vec<Span>) -> Line {
     // Mark the inner pre as content-editable="true" so the user can navigate the text with the keyboard
-
     let spans_as_string = items
         .iter()
         .map(|span| {
@@ -57,22 +54,6 @@ pub fn create_line_from_spans(line_index: usize, items: Vec<Span>) -> Line {
         lineIndex: line_index,
         __html,
     };
-    //   return {
-    //     lineIndex,
-    //     __html: `<code contenteditable="false" class="line-number noselect">${
-    //       lineIndex + 1
-    //     }</code><pre role="presentation" contenteditable="true" spellcheck="false" data-disable-content-edit data-line="${
-    //       lineIndex + 1
-    //     }" class="strip-content-editable-style">${items
-    //       .map(
-    //         (item) =>
-    //           `<pre ${item.className ? `class="${item.className}"` : ''}>${
-    //             item.text
-    //           }</pre>`,
-    //       )
-    //       .join('')}</pre>`,
-    //   };
-    // }
 }
 
 

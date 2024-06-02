@@ -1,105 +1,55 @@
+use std::ffi::OsString;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use std::path::PathBuf;
+
 use ansi_parser_extended::files::file_reader::FileReaderOptions;
+use ansi_parser_extended::mapping_file::create::create_mapping_file_from_input_path;
 use ansi_parser_extended::parse_ansi_text::parse_options::ParseOptions;
 use ansi_parser_extended::parse_file::file_to_lines_of_spans::read_ansi_file_to_lines;
 use ansi_parser_extended::parse_file::types::ReadAnsiFileOptions;
+use tempfile::NamedTempFile;
 
+use crate::log_helper::measure_fn_time;
 use crate::serialize_to_client::{create_line_from_spans, FileParsed, Line};
 
+fn get_tmp_file_path() -> PathBuf {
+    return NamedTempFile::new()
+        .expect("create temp file")
+        .into_temp_path()
+        .to_path_buf();
+}
+
 pub fn open_file_cmd(file_path: String) -> Option<FileParsed> {
-    /**
-    ```ts
-    logger.info('openFilePath', { filePath, requestedFromClient });
-    if (!filePath) {
-      logger.warn('no file selected');
-      window.webContents.send('file-selected', filePath);
-      window.webContents.send('file-parsed', undefined);
-      return undefined;
-    }
+    let other = file_path.clone();
+    let mapping_file_path = get_tmp_file_path();
 
-    logger.info('file path exists', { filePath, requestedFromClient });
+    measure_fn_time(
+        "create mapping file", ||
+            create_mapping_file_from_input_path(
+                mapping_file_path.clone(),
+                PathBuf::from(OsString::from(other)),
+            ),
+    );
 
-    window.setRepresentedFilename(filePath);
+    let number_of_lines = measure_fn_time(
+        "get number of lines",
+        || get_number_of_lines(file_path.as_str()),
+    );
 
-    // Just to let the renderer know that the file was selected
-    window.webContents.send('file-selected', filePath);
-
-    const parsed = await runFnAndLogDuration({
-      name: 'parse file',
-      fn: () => OpenedFileState.parseNewFile(window, filePath),
-      logArgs: { filePath },
-    });
-
-    const fileParsedEvent = runFnAndLogDuration({
-      name: 'Create file parsed event',
-      fn: () =>
-        ({
-          filePath,
-          totalLines: parsed.totalLines,
-          firstLines: parsed.getLinesSync(0),
-          globalStyle: parsed.commonStyle,
-          requestedFromClient,
-        }) satisfies FileParsedEvent,
-      logArgs: { filePath },
-    });
-    window.webContents.send('file-parsed', fileParsedEvent);
-
-    return filePath;
-    ```
-     */
-
-//     logger.info('openFilePath', { filePath, requestedFromClient });
-
-//     if !file_path.clone() {
-//         //       logger.warn('no file selected');
-// //       window.webContents.send('file-selected', filePath);
-// //       window.webContents.send('file-parsed', undefined);
-// //       return undefined;
-//         return None;
-//     }
-
-//
-//     logger.info('file path exists', { filePath, requestedFromClient });
-//
-//     window.setRepresentedFilename(filePath);
-//
-//     // Just to let the renderer know that the file was selected
-//     window.webContents.send('file-selected', filePath);
-//
-//     const parsed = await runFnAndLogDuration({
-//       name: 'parse file',
-//       fn: () => OpenedFileState.parseNewFile(window, filePath),
-//       logArgs: { filePath },
-//     });
-//     let parsed = OpenedFileState.parseNewFile(window, filePath);
-//
-//     const fileParsedEvent = runFnAndLogDuration({
-//       name: 'Create file parsed event',
-//       fn: () =>
-//         ({
-//           filePath,
-//           totalLines: parsed.totalLines,
-//           firstLines: parsed.getLinesSync(0),
-//           globalStyle: parsed.commonStyle,
-//           requestedFromClient,
-//         }) satisfies FileParsedEvent,
-//       logArgs: { filePath },
-//     });
-//     window.webContents.send('file-parsed', fileParsedEvent);
+    let first_lines = measure_fn_time(
+        "get lines sync",
+        || get_lines_sync(file_path.as_str()),
+    );
 
     return Some(FileParsed {
         filePath: file_path.clone(),
-//           totalLines: parsed.totalLines,
-        totalLines: get_number_of_lines(file_path.as_str()),
-//           firstLines: parsed.getLinesSync(0),
-        firstLines: get_lines_sync(file_path.as_str()),
-        // globalStyle: parsed.commonStyle,
+        totalLines: number_of_lines,
+        firstLines: first_lines,
         globalStyle: "".to_string(),
         requestedFromClient: true,
+        mappingFilePath: mapping_file_path.to_str().expect("mapping file path is not valid").to_string(),
     });
-//
-//     return filePath;
 }
 
 fn get_number_of_lines(file_path: &str) -> usize {

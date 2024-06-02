@@ -3,6 +3,7 @@ import { FileParsedEvent, Line } from '../../shared-types';
 import { LINES_BLOCK_SIZE } from '../../shared/constants';
 import { LinesStorage } from '../lines-storage';
 import { Backend } from '../services';
+import { getContainer } from './stores-container';
 
 type CurrentFileState = 'idle' | 'reading' | 'read' | 'error';
 
@@ -218,7 +219,11 @@ export class CurrentFileStore {
     this.linesStorage.addBlocks(
       await Promise.all(
         Array.from({ length: numberOfBlocks }, (_, i) =>
-          Backend.getLines(startLineNumber + i * LINES_BLOCK_SIZE),
+          // TODO - move the mapping file path to this class
+          Backend.getLines(
+            startLineNumber + i * LINES_BLOCK_SIZE,
+            getContainer().fileSelectorStore.mappingFilePath,
+          ),
         ),
       ),
     );

@@ -101,12 +101,16 @@ export function startReadingFile(filePathToRead: string): void {
   // window.electron.startReadingFile(filePathToRead);
 }
 
-export function getLines(fromLine: number): Promise<Line[]> {
+export function getLines(
+  fromLine: number,
+  mappingFilePath?: string,
+): Promise<Line[]> {
   console.log('getLines');
   return invoke('get_lines', {
     filePath: getContainer().fileSelectorStore.currentFilePath,
     fromLine,
     toLine: fromLine + LINES_BLOCK_SIZE,
+    mappingFilePath,
   });
   // return window.electron.getLines(fromLine);
 }

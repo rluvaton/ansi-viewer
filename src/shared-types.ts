@@ -6,6 +6,7 @@ export interface FileParsedEvent {
   totalLines: number;
   globalStyle: string;
   requestedFromClient: boolean;
+  mappingFilePath?: string;
 }
 
 export interface LineItem {

@@ -9,13 +9,21 @@ use ansi_parser_extended::parse_file::file_to_lines_of_spans::read_ansi_file_to_
 use ansi_parser_extended::parse_file::from_middle_of_file::get_from_middle_of_the_file_info;
 use ansi_parser_extended::parse_file::types::ReadAnsiFileOptions;
 
+use crate::log_helper::measure_fn_time;
 use crate::serialize_to_client::{create_line_from_spans, Line};
 
-pub fn get_lines_cmd(file_path: String, from_line: usize, to_line: usize, mapping_file: Option<&String>) -> Vec<Line> {
+pub fn get_lines_cmd(file_path: String, from_line: usize, to_line: usize, mapping_file: Option<String>) -> Vec<Line> {
     let input_file_path = PathBuf::from(OsString::from(file_path.clone()));
 
-    let middle_of_file_info =
-        get_from_middle_of_the_file_info(input_file_path, Some(&from_line), Some(&to_line), mapping_file);
+    let mapping_file_string_desc = mapping_file.is_none()
+        .then(|| "without mapping file")
+        .unwrap_or_else(|| "with mapping file");
+
+    let middle_of_file_info = measure_fn_time(
+        format!("Get middle of file info {}", mapping_file_string_desc).as_str(),
+        || get_from_middle_of_the_file_info(input_file_path, Some(from_line), Some(to_line), mapping_file),
+    );
+
 
     let mut chunk_size_in_bytes = 1024 * 1024 * 10; // 10MB
 
@@ -24,7 +32,7 @@ pub fn get_lines_cmd(file_path: String, from_line: usize, to_line: usize, mappin
     }
 
     let file_reader_options = FileReaderOptions {
-        file_path: file_path,
+        file_path,
         chunk_size_in_bytes: Some(chunk_size_in_bytes),
         from_bytes: middle_of_file_info.from_bytes,
         to_bytes: middle_of_file_info.to_bytes,
@@ -39,11 +47,14 @@ pub fn get_lines_cmd(file_path: String, from_line: usize, to_line: usize, mappin
 
     let mut index = from_line;
 
-    return read_ansi_file_to_lines(options)
-        .map(|line| {
-            let line = create_line_from_spans(index, line.spans);
-            index += 1;
-            return line;
-        })
-        .collect::<Vec<Line>>();
+    return measure_fn_time(
+        format!("read ANSI file lines {}", mapping_file_string_desc).as_str(),
+        || read_ansi_file_to_lines(options)
+            .map(|line| {
+                let line = create_line_from_spans(index, line.spans);
+                index += 1;
+                return line;
+            })
+            .collect::<Vec<Line>>(),
+    );
 }
